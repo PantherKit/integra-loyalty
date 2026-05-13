@@ -1,0 +1,80 @@
+name: cdk
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - 'api/**'
+      - '.github/workflows/cdk.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - 'api/**'
+      - '.github/workflows/cdk.yml'
+
+permissions:
+  id-token: write   # OIDC federation a AWS — ADR-005
+  contents: read
+  pull-requests: write
+
+jobs:
+  lint-and-synth:
+    name: lint + cdk synth
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            api/package-lock.json
+            infra/package-lock.json
+
+      - name: Install api dependencies
+        working-directory: api
+        run: npm ci
+
+      - name: Typecheck api
+        working-directory: api
+        run: npm run lint
+
+      - name: Install infra dependencies
+        working-directory: infra
+        run: npm ci
+
+      - name: CDK synth
+        working-directory: infra
+        run: npm run synth
+
+  # ============================================================
+  # Deploy step — comentado hasta que se configure OIDC + bootstrap
+  # Ver ADR-005 sección "Plan de implementación"
+  # ============================================================
+  # deploy-dev:
+  #   name: deploy dev
+  #   needs: lint-and-synth
+  #   if: github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20"
+  #         cache: "npm"
+  #         cache-dependency-path: |
+  #           api/package-lock.json
+  #           infra/package-lock.json
+  #     - uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: arn:aws:iam::041876399045:role/GitHubActions-CDK-Deploy
+  #         aws-region: us-east-1
+  #     - run: npm ci
+  #       working-directory: api
+  #     - run: npm ci
+  #       working-directory: infra
+  #     - run: npm run deploy:dev
+  #       working-directory: infra

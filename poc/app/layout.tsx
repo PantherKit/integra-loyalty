@@ -3,7 +3,7 @@ import './globals.css';
 import Link from 'next/link';
 
 const SITE_URL = 'https://lealtad-poc.integra-group.ai';
-const TITLE = 'Integra Lealtad — POC';
+const TITLE = 'Integra Loyalty — POC';
 const DESCRIPTION =
   'Prototipo navegable de la plataforma SaaS de tarjetas de lealtad digital — sin app, en el Apple Wallet o Google Wallet del cliente.';
 
@@ -15,10 +15,10 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     url: SITE_URL,
-    siteName: 'Integra Lealtad',
+    siteName: 'Integra Loyalty',
     locale: 'es_MX',
     type: 'website',
-    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Integra Lealtad — POC navegable' }],
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Integra Loyalty — POC navegable' }],
   },
   twitter: {
     card: 'summary_large_image',

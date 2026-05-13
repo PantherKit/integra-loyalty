@@ -1,6 +1,6 @@
 # CLAUDE.md — Integra · Lealtad Digital
 
-Knowledge base del producto **Integra Lealtad**. Fuente de verdad para cualquier sesión Claude que toque este repo.
+Knowledge base del producto **Integra Loyalty**. Fuente de verdad para cualquier sesión Claude que toque este repo.
 
 ## Qué es este producto
 
@@ -9,7 +9,7 @@ Knowledge base del producto **Integra Lealtad**. Fuente de verdad para cualquier
 Las tarjetas viven en **Apple Wallet y Google Wallet** — no requiere app móvil. Es el diferenciador clave del producto frente a competencia genérica.
 
 Modelo: **B2B**.
-- Integra Lealtad → vende suscripciones a → comercios → emiten tarjetas a → consumidores finales.
+- Integra Loyalty → vende suscripciones a → comercios → emiten tarjetas a → consumidores finales.
 
 ## Diferenciadores hard-coded
 
@@ -76,7 +76,7 @@ Estos dictan decisiones técnicas y de UX:
 ## Estructura del repo
 
 ```
-integra-lealtad/
+integra-loyalty/
 ├── CLAUDE.md           ← este archivo
 ├── poc/                ← POC Next.js navegable (3 vistas: editor / customer / merchant)
 │   └── live: https://lealtad-poc.integra-group.ai/
@@ -115,5 +115,26 @@ El POC es lo que demuestra el producto a comercios prospecto. Los datos son mock
 
 ## Documentos
 
-- `docs/onboarding-history/` (si existe) — material histórico, no fuente de verdad
-- Fuente de verdad: este CLAUDE.md + las decisiones que vivan en `docs/`
+- `docs/architecture/` — diseño de sistema por feature (dev-environment, etc.)
+- `docs/adr/` — Architecture Decision Records (5 ADRs canónicos)
+- `docs/br/` — Business Requirements por feature (gate antes de codear cada feature)
+- Fuente de verdad: este CLAUDE.md + decisiones en `docs/adr/`
+
+## Comandos comunes
+
+| Comando | Qué hace |
+|---|---|
+| `cd api && npm run lint` | Typecheck del backend (Lambda + Hono) |
+| `cd infra && npm run synth` | Genera CloudFormation sin deploy (validación CDK) |
+| `cd infra && npm run diff:dev` | Diff de cambios pendientes vs lo deployado en dev |
+| `cd infra && npm run deploy:dev` | Deploy a env dev (requiere AWS creds activas) |
+| `cd poc && npm run dev` | Dev server del POC navegable (legacy de pre-venta) |
+| `cd poc && npm run build` | Build estático del POC |
+
+## Primer deploy a AWS
+
+Ver `infra/README.md` para prerequisitos:
+1. CDK bootstrap en account + region (1 vez)
+2. OIDC provider + IAM role `GitHubActions-CDK-Deploy`
+3. Primer `cdk deploy IntegraLoyalty-dev` manual
+4. Activar deploy-dev job en `.github/workflows/cdk.yml`
