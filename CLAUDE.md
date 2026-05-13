@@ -1,52 +1,31 @@
-# CLAUDE.md — Coutiño · Lealtad Digital
+# CLAUDE.md — Integra · Lealtad Digital
 
-Knowledge base auto-generada del onboarding de Coutiño. Esta es la fuente de verdad para cualquier sesión Claude que toque este repo.
+Knowledge base del producto **Integra Lealtad**. Fuente de verdad para cualquier sesión Claude que toque este repo.
 
-## Qué es este proyecto
+## Qué es este producto
 
-**Plataforma SaaS multi-tenant de tarjetas de lealtad digital** que Coutiño venderá por suscripción a comercios pequeños y medianos del interior de la República Mexicana (Mérida, Puerto Escondido, Oaxaca, San Cristóbal, etc.).
+**Plataforma SaaS multi-tenant de tarjetas de lealtad digital** que Integra Group AI opera y vende por suscripción a comercios pequeños y medianos (México, mercado primario).
 
 Las tarjetas viven en **Apple Wallet y Google Wallet** — no requiere app móvil. Es el diferenciador clave del producto frente a competencia genérica.
 
-Modelo: **B2B2C**.
-- Coutiño (cliente de IG) → vende suscripciones a → comercios → emiten tarjetas a → consumidores finales.
+Modelo: **B2B**.
+- Integra Lealtad → vende suscripciones a → comercios → emiten tarjetas a → consumidores finales.
 
-**Diferenciadores hard-coded** que dictan decisiones técnicas:
+## Diferenciadores hard-coded
+
+Estos dictan decisiones técnicas y de UX:
+
 - Comercios target con baja sofisticación técnica → editor drag-and-drop, onboarding por WhatsApp
 - Conexiones a internet inestables → PWA con cache offline + sync diferido
 - Smartphones Android gama media-baja → mobile-first, cero dependencia de iOS-only features
 - **Tarjetas en Apple Wallet (PassKit) y Google Wallet API** — agrega con un tap, push nativo, geofence
 - Mercado en español sin alternativa local → producto monolingüe, branding mexicano
 
-## Cliente
-
-| Campo | Valor |
-|---|---|
-| Empresa | Coutiño *(razón social por confirmar)* |
-| Contacto principal | Maximiliano Coutiño |
-| Cargo | *(por confirmar)* |
-| Email | *(por confirmar)* |
-| Teléfono | +52 55 6075 1194 |
-| Industria | SaaS / distribución de tecnología |
-| Tipo | B2B2C |
-
-## Proyecto
-
-| Campo | Valor |
-|---|---|
-| Nombre | Plataforma SaaS de Tarjetas de Lealtad Digital |
-| Nombre corto | Lealtad Digital |
-| Número proyecto | IG-006 |
-| Fecha inicio (tentativa) | 08/05/2026 |
-| Duración estimada | 8-10 semanas (target: 9 semanas) |
-| Inversión | $160,000 MXN llave en mano (incluye Apple Wallet + Google Wallet) |
-| Forma de pago | 50% al firmar ($80k) / 50% a la entrega ($80k) |
-
-## Stack técnico decidido
+## Stack técnico
 
 | Capa | Tecnología |
 |---|---|
-| Frontend | Next.js 14 App Router + Tailwind + shadcn/ui (PWA fallback) |
+| Frontend | Next.js 14 App Router + Tailwind + shadcn-style (PWA fallback) |
 | Backend API | Lambda (Node 20) + Hono + Zod |
 | Auth | AWS Cognito User Pools (multi-tenant) |
 | DB | DynamoDB single-table |
@@ -60,24 +39,24 @@ Modelo: **B2B2C**.
 | CI/CD | GitHub Actions |
 | Observabilidad | CloudWatch + X-Ray |
 
-**Razón del stack:** 100% serverless, scale-to-zero, costo $0 sin tráfico. Costo AWS estimado <$60 USD/mes con 100 comercios pagando. Apple Developer Program $99 USD/año, cuenta **Individual a nombre de Maximiliano Coutiño persona física** (Coutiño aún no está constituida como empresa, por eso no aplica DUNS). Google Wallet API gratis al volumen inicial.
+**Razón del stack:** 100% serverless, scale-to-zero, costo $0 sin tráfico. Costo AWS estimado <$60 USD/mes con 100 comercios pagando. Apple Developer Program $99 USD/año bajo cuenta de Integra. Google Wallet API gratis al volumen inicial.
 
 ## Multi-tenancy
 
 - **Modelo:** shared-db con `tenant_id` como partition key
 - **Aislamiento:** lógico (no isolated-account-per-tenant)
-- **Auth:** Cognito User Pools con grupos por rol (`merchant`, `end_customer`, `coutino_admin`)
+- **Auth:** Cognito User Pools con grupos por rol (`merchant`, `end_customer`, `integra_admin`)
 
 ## Roles del sistema
 
-1. **merchant** — el comercio que paga la suscripción a Coutiño. Crea programas, edita tarjetas, ve dashboard.
+1. **merchant** — el comercio que paga la suscripción. Crea programas, edita tarjetas, ve dashboard.
 2. **end_customer** — el consumidor final del comercio. Recibe tarjeta digital en Apple Wallet o Google Wallet (o PWA fallback). Acumula puntos, canjea premios.
-3. **coutino_admin** — Maximiliano y su equipo. Panel global, MRR, soporte, override.
+3. **integra_admin** — equipo de Integra. Panel global, MRR, soporte, override.
 
 ## Wallet integration architecture
 
 **Apple Wallet (PassKit):**
-- Pass `.pkpass` firmado con certificado de Coutiño (Apple Developer Program)
+- Pass `.pkpass` firmado con certificado del Apple Developer Program de Integra
 - Generación dinámica por cliente final con datos del comercio + puntos actuales
 - PassKit Web Service endpoints en Lambda para registro/des-registro de devices
 - Updates push vía APNs cuando cambian puntos
@@ -94,21 +73,29 @@ Modelo: **B2B2C**.
 - Login magic-link, mismo backend
 - Service worker para uso offline básico
 
-## Fases del proyecto
+## Estructura del repo
 
-| Semana | Fase | Output |
-|---|---|---|
-| S1 | Discovery & Validación | Wireframes Figma + diseño Wallet pass |
-| S2 | Infraestructura Base | AWS deployable, auth funcional, Google Wallet API setup |
-| S3 | Backend Core | API + tests |
-| S4 | Frontend Core | Editor + dashboards |
-| S5 | Motor de Puntos + Cliente Final | E2E funcional (web/PWA) |
-| S6 | Integraciones core | Stripe + WhatsApp + SES |
-| S7 | Apple Wallet + Google Wallet | Passes activos en iOS y Android reales |
-| S8 | Piloto & Testing | Validado con 2-3 comercios reales |
-| S9 | Entrega & Capacitación | Producción + workshop + docs |
+```
+integra-lealtad/
+├── CLAUDE.md           ← este archivo
+├── poc/                ← POC Next.js navegable (3 vistas: editor / customer / merchant)
+│   └── live: https://lealtad-poc.integra-group.ai/
+├── docs/               ← decisiones de producto, arquitectura
+└── .github/workflows/  ← CI lint (Next.js)
+```
 
-## KPIs objetivo (mes 12 post-lanzamiento)
+## POC
+
+POC navegable validado y aprobado: **https://lealtad-poc.integra-group.ai/**
+
+Stack del POC:
+- Next.js 14 static export
+- Tailwind + lucide-react
+- 3 vistas mock con datos hardcoded: editor (admin), customer (consumidor), merchant (dashboard del comercio)
+
+El POC es lo que demuestra el producto a comercios prospecto. Los datos son mock; la versión productiva (en construcción) usa DynamoDB + Wallet APIs reales.
+
+## KPIs objetivo (mes 12 post-lanzamiento productivo)
 
 - 250 comercios pagando
 - $250k MXN MRR
@@ -117,39 +104,16 @@ Modelo: **B2B2C**.
 - Time-to-first-card <10 min
 - Churn mensual <10%
 
-## Riesgos principales (de discovery)
+## Riesgos principales
 
 1. **Adopción baja por baja sofisticación técnica** → mitigación: onboarding por WhatsApp + workshop + 1 mes soporte
 2. **Conexión inestable** → mitigación: PWA con cache offline
 3. **Costos AWS escalan más rápido que ingresos** → mitigación: stack 100% serverless + alertas billing
 4. **Cumplimiento LFPDPPP** → mitigación: aviso de privacidad + encriptación + retención configurable
-5. **Cuenta Apple Developer Individual demora más de 1 día** → bajo riesgo (cuenta Individual a nombre de Maximiliano persona física, sin DUNS, ~24h aprobación); fallback: arrancar Wallet sin cert y sumarlo al final de S7
+5. **Apple Developer cert demora más de 1 día** → cuenta Organization de Integra (con DUNS, ~24h-1 semana aprobación)
 6. **Apple rechaza certificado** → mitigación: validar nombre y branding antes de generar el cert
 
-## Documentos de onboarding
+## Documentos
 
-Los 8 docs del paquete oficial al cliente viven en `docs/onboarding/`:
-
-- `01-welcome.md`
-- `02-discovery.md` ← más rica en contexto del producto
-- `03-acuerdo.md` ← contrato
-- `04-cotizacion.md`
-- `05-forma-trabajo.md`
-- `06-portal.md`
-- `07-roadmap.md` ← timeline detallado por semana
-- `08-objetivos.md` ← KPIs y baseline
-
-Para entender el producto a fondo, leer en este orden: 02 → 07 → 08 → 03.
-
-## Datos abiertos / por levantar
-
-- Razón social, RFC, datos fiscales del cliente
-- Email principal y cargo de Maximiliano
-- Comercios piloto identificados (necesarios para S8)
-- Modelo de pricing final que cobra Coutiño a sus comercios
-- Necesidad de marca blanca (fuera de scope Phase 1; cambia complejidad)
-- Plan de soporte post-mes 1 (¿retainer con Integra? ¿equipo interno? ¿partner?)
-- Localización fuera de México (no en Phase 1)
-- **Cuenta Apple Developer Individual** a nombre de Maximiliano Coutiño persona física → trámite ~1 día en S1 (Coutiño aún no es empresa, por eso Individual). Cuando se constituyan, se migra a Organization (requerirá DUNS, gratis o ~$300 USD expedito).
-- **¿Cuenta Google Cloud para Google Wallet API?** (gratis pero requiere setup en S2)
-- **Coutiño no está constituida como empresa todavía.** Es Maximiliano Coutiño como persona física. Esto afecta facturación, Apple Developer, y eventualmente migración a Organization. Las decisiones de hoy (cuenta Individual, factura a persona física) hay que rehacerlas cuando se constituya.
+- `docs/onboarding-history/` (si existe) — material histórico, no fuente de verdad
+- Fuente de verdad: este CLAUDE.md + las decisiones que vivan en `docs/`

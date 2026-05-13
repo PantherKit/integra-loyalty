@@ -121,7 +121,7 @@ export default function CustomerPage() {
             <Explanation
               title="El QR está en el mostrador"
               body="Cada comercio recibe un QR físico imprimible (sticker, tent card, póster) y un link compartible. El cliente lo escanea desde la cámara del teléfono — sin app, sin login."
-              points={['Generación masiva de QRs por Coutiño', 'Link único por comercio (multi-tenant)', 'No requiere instalar nada']}
+              points={['Generación masiva de QRs por Integra', 'Link único por comercio (multi-tenant)', 'No requiere instalar nada']}
             />
           )}
           {step === 'landing' && (
@@ -134,7 +134,7 @@ export default function CustomerPage() {
           {step === 'add' && (
             <Explanation
               title="Add to Wallet — un tap"
-              body="Apple Wallet (PassKit) firma el pase con el certificado del Apple Developer Program de Coutiño. Google Wallet usa la API de Loyalty Class. Cero fricción."
+              body="Apple Wallet (PassKit) firma el pase con el certificado del Apple Developer Program de Integra. Google Wallet usa la API de Loyalty Class. Cero fricción."
               points={['Apple PassKit + APNs', 'Google Wallet Loyalty Class', '~3 segundos del tap a tarjeta agregada']}
             />
           )}
@@ -219,7 +219,7 @@ function ScreenQR({ onNext }: { onNext: () => void }) {
         <QrCode size={88} className="text-black" />
       </div>
       <p className="text-xs opacity-70 mb-1">Escanea con la cámara</p>
-      <p className="font-medium">cafemerida.coutino.app</p>
+      <p className="font-medium">cafemerida.lealtad.app</p>
       <button
         onClick={onNext}
         className="mt-6 bg-white text-black text-sm font-medium px-5 py-2 rounded-full"
