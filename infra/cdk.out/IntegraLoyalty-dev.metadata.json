@@ -1,0 +1,588 @@
+{
+  "/IntegraLoyalty-dev": [
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    },
+    {
+      "type": "aws:cdk:stack-tags",
+      "data": [
+        {
+          "key": "Environment",
+          "value": "dev"
+        },
+        {
+          "key": "ManagedBy",
+          "value": "cdk"
+        },
+        {
+          "key": "Owner",
+          "value": "integra-group"
+        },
+        {
+          "key": "Project",
+          "value": "integra-loyalty"
+        }
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/Table": [
+    {
+      "type": "aws:cdk:hasPhysicalName",
+      "data": {
+        "Ref": "TableCD117FA1"
+      }
+    }
+  ],
+  "/IntegraLoyalty-dev/EnvBudget": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "EnvBudget"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:165:5)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/Custom::S3AutoDeleteObjectsCustomResourceProvider": [
+    {
+      "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
+      "data": true
+    }
+  ],
+  "/IntegraLoyalty-dev/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C": [
+    {
+      "type": "aws:cdk:is-custom-resource-handler-singleton",
+      "data": true
+    },
+    {
+      "type": "aws:cdk:is-custom-resource-handler-runtime-family",
+      "data": 2
+    }
+  ],
+  "/IntegraLoyalty-dev/TableName": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "TableName"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:257:5)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/ApiUrl": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ApiUrl"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:258:5)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/UserPoolId": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "UserPoolId"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:259:5)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/UserPoolClientId": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "UserPoolClientId"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:260:5)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/WebUrl": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebUrl"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:261:5)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/WebBucketName": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebBucketName"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:262:5)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, node internals, @cspotcode/source-map-support...",
+        "(no user code in 9007199254740991 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, node internals, @cspotcode/source-map-support...",
+        "(no user code in 9007199254740991 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/Table/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "TableCD117FA1"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Table2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:34:18)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/UserPool/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "UserPool6BA7E5F2"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new UserPool2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:54:22)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/ApiLogGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ApiLogGroup1DEDFC07"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new LogGroup2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:97:25)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/ApiHandler/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ApiHandler5E7490E8"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new NodejsFunction in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:103:19)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/HttpApi/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "HttpApiF5A9A8A7"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new HttpApi2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:144:21)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/WebBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebBucket12880F5B"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Bucket2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:201:24)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    },
+    {
+      "type": "aws:cdk:analytics:mixin",
+      "data": {
+        "mixin": "aws-cdk-lib.aws_s3.mixins.BucketAutoDeleteObjects"
+      }
+    }
+  ],
+  "/IntegraLoyalty-dev/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Bucket2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:201:24)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Bucket2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:201:24)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/IndexRewriteFn/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "IndexRewriteFn49CE9D7D"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Function2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:210:28)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/WebDistribution/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebDistribution59C46482"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Distribution2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:225:26)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new BucketDeployment2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:248:7)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, node internals, @cspotcode/source-map-support...",
+        "(no user code in 9007199254740991 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/UserPool/Client/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "UserPoolClient43258C81"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...WrappedClass.addClient in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:75:37)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/ApiHandler/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ApiHandlerServiceRole592E70E9"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new NodejsFunction in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:103:19)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/HttpApi/DefaultStage/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "HttpApiDefaultStage3EEB07D6"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new HttpApi2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:144:21)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/HttpApi/ANY--{proxy+}/LambdaIntegration-Permission": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "HttpApiANYproxyLambdaIntegrationPermission2EDD6285"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/node_modules/aws-cdk-lib/aws-apigatewayv2/lib/http/api.js:1:96 in aws-cdk-lib...",
+        "Array.map (:)",
+        "...WrappedClass.<anonymous> in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:154:13)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/HttpApi/ANY--{proxy+}/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "HttpApiANYproxy435A1FB9"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/node_modules/aws-cdk-lib/aws-apigatewayv2/lib/http/api.js:1:96 in aws-cdk-lib...",
+        "Array.map (:)",
+        "...WrappedClass.<anonymous> in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:154:13)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/WebBucket/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebBucketPolicy95D08FAA"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Bucket2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:201:24)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    },
+    {
+      "type": "aws:cdk:analytics:mixin",
+      "data": {
+        "mixin": "aws-cdk-lib.aws_s3.mixins.BucketPolicyStatements"
+      }
+    }
+  ],
+  "/IntegraLoyalty-dev/WebBucket/AutoDeleteObjectsCustomResource/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebBucketAutoDeleteObjectsCustomResource9C1A079F"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Bucket2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:201:24)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/WebDeployment/AwsCliLayer/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebDeploymentAwsCliLayer79C1EFEA"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new BucketDeployment2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:248:7)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/WebDeployment/CustomResource/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebDeploymentCustomResource08EEC474"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new BucketDeployment2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:248:7)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new BucketDeployment2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:248:7)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/ApiHandler/ServiceRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ApiHandlerServiceRoleDefaultPolicy10321D87"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...WrappedClass.grantReadWriteData in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:129:16)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/HttpApi/ANY--{proxy+}/LambdaIntegration/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "HttpApiANYproxyLambdaIntegration6181A2F1"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/node_modules/aws-cdk-lib/aws-apigatewayv2/lib/http/api.js:1:96 in aws-cdk-lib...",
+        "Array.map (:)",
+        "...WrappedClass.<anonymous> in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:154:13)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/WebDistribution/Origin1/S3OriginAccessControl/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WebDistributionOrigin1S3OriginAccessControl83AD2F73"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Distribution2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:225:26)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/IntegraLoyalty-dev/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/node_modules/aws-cdk-lib/aws-s3-deployment/lib/bucket-deployment.js:1:71 in aws-cdk-lib...",
+        "Array.map (:)",
+        "...new BucketDeployment2 in aws-cdk-lib...",
+        "new IntegraLoyaltyStack (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/lib/integra-loyalty-stack.ts:248:7)",
+        "<anonymous> (/Users/jorge/Documents/IntegraGroupAI/integra-loyalty/infra/bin/app.ts:18:3)",
+        "...node internals, ts-node, ts-node, ts-node..."
+      ]
+    }
+  ]
+}
