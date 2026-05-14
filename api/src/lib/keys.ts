@@ -8,6 +8,16 @@ export const userSk = (userId: string) => `USER#${userId}` as const;
 export const programSk = (programId: string) => `PROGRAM#${programId}` as const;
 export const customerSk = (customerId: string) => `CUSTOMER#${customerId}` as const;
 export const cardSk = (cardId: string) => `CARD#${cardId}` as const;
+// TXN#<reverse-timestamp>#<short-id> — ordenable lexicográficamente descendente para activity feed
+export const transactionSk = (createdAt: string, transactionId: string) =>
+  `TXN#${reverseTimestamp(createdAt)}#${transactionId.slice(0, 8)}` as const;
+
+function reverseTimestamp(iso: string): string {
+  // Truco para ordenar DESC por timestamp con ScanIndexForward=true:
+  // 9999-12-31T23:59:59.999Z menos el ISO actual.
+  // Más simple: usar el ISO directo y query con ScanIndexForward=false.
+  return iso;
+}
 
 // GSI1 — lookup user/customer por email/phone
 export const emailGsi1Pk = (email: string) => `EMAIL#${email.toLowerCase().trim()}` as const;

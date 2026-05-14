@@ -1,0 +1,114 @@
+import { Hono } from 'hono';
+import { requireTenant } from '../middleware/tenant';
+import { getCard, getCardById, listCardsByPhoneInTenant, stampCard, redeemCard } from '../lib/repositories/card';
+import { getProgram } from '../lib/repositories/program';
+import { StampInput, RedeemInput } from '../lib/entities';
+
+export const cards = new Hono();
+
+/**
+ * GET /cards/lookup?phone=+5219991234567 — merchant busca cards de un customer por phone (auth).
+ */
+cards.get('/lookup', requireTenant, async (c) => {
+  const tenantId = c.get('tenantId');
+  const phone = c.req.query('phone');
+  if (!phone || !/^\+\d{10,15}$/.test(phone)) {
+    return c.json({ error: 'invalid_phone', hint: 'formato E.164 ej. +5219991234567' }, 400);
+  }
+  const items = await listCardsByPhoneInTenant(tenantId, phone);
+  return c.json({ items });
+});
+
+/**
+ * GET /cards/:id — público, lee una card por su id opaco (PWA wallet view).
+ * Nota: SIN requireTenant. cardId es opaco (UUID), funciona como bearer.
+ */
+cards.get('/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'missing_id' }, 400);
+  const card = await getCardById(id);
+  if (!card) return c.json({ error: 'card_not_found' }, 404);
+  // Enriquecer con info del program para que la PWA muestre stampsRequired y rewardDetail
+  // (acceso al program no requiere auth tampoco — datos del comercio son públicos).
+  return c.json(card);
+});
+
+/**
+ * POST /cards/:id/stamp — agrega sellos (auth requerida).
+ */
+cards.post('/:id/stamp', requireTenant, async (c) => {
+  const tenantId = c.get('tenantId');
+  const userId = c.get('userId');
+  const cardId = c.req.param('id');
+  if (!cardId) return c.json({ error: 'missing_id' }, 400);
+
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = StampInput.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400);
+
+  const card = await getCard(tenantId, cardId);
+  if (!card) return c.json({ error: 'card_not_found' }, 404);
+
+  const program = await getProgram(tenantId, card.programId);
+  if (!program) return c.json({ error: 'program_not_found' }, 404);
+
+  try {
+    const result = await stampCard({
+      tenantId,
+      cardId,
+      amount: parsed.data.amount,
+      program,
+      performedByUserId: userId,
+      note: parsed.data.note,
+    });
+    return c.json(result);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('ConditionalCheckFailed')) {
+      return c.json({ error: 'race_condition', hint: 'Otro stamp se aplicó al mismo tiempo. Reintenta.' }, 409);
+    }
+    if (msg.startsWith('card_not_active')) return c.json({ error: msg }, 409);
+    throw e;
+  }
+});
+
+/**
+ * POST /cards/:id/redeem — canjea premio (auth requerida).
+ */
+cards.post('/:id/redeem', requireTenant, async (c) => {
+  const tenantId = c.get('tenantId');
+  const userId = c.get('userId');
+  const cardId = c.req.param('id');
+  if (!cardId) return c.json({ error: 'missing_id' }, 400);
+
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = RedeemInput.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400);
+
+  const card = await getCard(tenantId, cardId);
+  if (!card) return c.json({ error: 'card_not_found' }, 404);
+
+  const program = await getProgram(tenantId, card.programId);
+  if (!program) return c.json({ error: 'program_not_found' }, 404);
+
+  try {
+    const result = await redeemCard({
+      tenantId,
+      cardId,
+      program,
+      performedByUserId: userId,
+      note: parsed.data.note,
+    });
+    return c.json(result);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.startsWith('insufficient_stamps')) {
+      return c.json({ error: 'insufficient_stamps', detail: msg, hint: 'Aún no completa el programa.' }, 409);
+    }
+    if (msg.includes('ConditionalCheckFailed')) {
+      return c.json({ error: 'race_condition', hint: 'El canje ya fue procesado.' }, 409);
+    }
+    if (msg.startsWith('card_not_active')) return c.json({ error: msg }, 409);
+    throw e;
+  }
+});

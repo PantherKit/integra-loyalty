@@ -124,7 +124,16 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant> {
 }
 
 export interface Customer { tenantId: string; customerId: string; phone: string; firstName?: string; email?: string; }
-export interface Card { tenantId: string; cardId: string; programId: string; customerId: string; customerPhone: string; stamps: number; status: string; }
+export interface Card {
+  tenantId: string;
+  cardId: string;
+  programId: string;
+  customerId: string;
+  customerPhone: string;
+  stamps: number;
+  redemptionsCount: number;
+  status: 'active' | 'completed' | 'expired' | 'cancelled';
+}
 
 export async function signupCustomerToMerchant(slug: string, input: { phone: string; firstName?: string; email?: string; programId?: string; }): Promise<{ customer: Customer; card: Card; program: LoyaltyProgram }> {
   return request(`/m/${encodeURIComponent(slug)}/customers`, { method: 'POST', body: JSON.stringify(input) });
@@ -132,4 +141,46 @@ export async function signupCustomerToMerchant(slug: string, input: { phone: str
 
 export async function getCard(cardId: string): Promise<Card> {
   return request<Card>(`/cards/${encodeURIComponent(cardId)}`);
+}
+
+// Slice 3 — stamps + redeem + activity (merchant auth)
+
+export interface Transaction {
+  type: 'TRANSACTION';
+  tenantId: string;
+  transactionId: string;
+  kind: 'stamp' | 'redeem';
+  cardId: string;
+  customerId: string;
+  customerPhone: string;
+  programId: string;
+  programName: string;
+  amount: number;
+  stampsBefore: number;
+  stampsAfter: number;
+  note?: string;
+  performedByUserId: string;
+  createdAt: string;
+}
+
+export async function lookupCardsByPhone(phone: string): Promise<{ items: Card[] }> {
+  return request<{ items: Card[] }>(`/cards/lookup?phone=${encodeURIComponent(phone)}`);
+}
+
+export async function stampCard(cardId: string, amount = 1, note?: string): Promise<{ card: Card; transaction: Transaction }> {
+  return request(`/cards/${encodeURIComponent(cardId)}/stamp`, {
+    method: 'POST',
+    body: JSON.stringify({ amount, note }),
+  });
+}
+
+export async function redeemCardApi(cardId: string, note?: string): Promise<{ card: Card; transaction: Transaction }> {
+  return request(`/cards/${encodeURIComponent(cardId)}/redeem`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  });
+}
+
+export async function getActivity(limit = 20): Promise<{ items: Transaction[] }> {
+  return request<{ items: Transaction[] }>(`/activity?limit=${limit}`);
 }

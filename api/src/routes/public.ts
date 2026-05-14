@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getMerchantBySlug } from '../lib/repositories/merchant';
 import { listProgramsByTenant } from '../lib/repositories/program';
 import { createCustomer, findCustomerByPhoneInTenant } from '../lib/repositories/customer';
-import { createCard, getCardById } from '../lib/repositories/card';
+import { createCard } from '../lib/repositories/card';
 import { SignupCustomerInput } from '../lib/entities';
 
 // Endpoints públicos (sin auth) — landing del merchant + customer signup
@@ -79,10 +79,4 @@ publicRoutes.post('/m/:slug/customers', async (c) => {
   return c.json({ customer, card, program: targetProgram }, 201);
 });
 
-// GET /cards/:id — público, lee una card por su id opaco
-publicRoutes.get('/cards/:id', async (c) => {
-  const id = c.req.param('id');
-  const card = await getCardById(id);
-  if (!card) return c.json({ error: 'card_not_found' }, 404);
-  return c.json(card);
-});
+// (GET /cards/:id se movió a routes/cards.ts para convivir con stamp/redeem)

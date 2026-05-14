@@ -150,3 +150,40 @@ export const CardSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 export type Card = z.infer<typeof CardSchema>;
+
+// =============================================================================
+// Transaction (stamp / redeem) — Slice 3
+// =============================================================================
+
+export const TransactionKindSchema = z.enum(['stamp', 'redeem']);
+export type TransactionKind = z.infer<typeof TransactionKindSchema>;
+
+export const TransactionSchema = z.object({
+  type: z.literal('TRANSACTION'),
+  tenantId: z.string().uuid(),
+  transactionId: z.string().uuid(),
+  kind: TransactionKindSchema,
+  cardId: z.string().uuid(),
+  customerId: z.string().uuid(),
+  customerPhone: z.string().regex(/^\+\d{10,15}$/),
+  programId: z.string().uuid(),
+  programName: z.string(), // denormalizado para activity feed
+  amount: z.number().int().min(1).default(1), // sellos (stamp) o canjes (redeem siempre 1)
+  stampsBefore: z.number().int().min(0),
+  stampsAfter: z.number().int().min(0),
+  note: z.string().max(200).optional(),
+  performedByUserId: z.string(), // qué user del merchant ejecutó
+  createdAt: z.string().datetime(),
+});
+export type Transaction = z.infer<typeof TransactionSchema>;
+
+export const StampInput = z.object({
+  amount: z.number().int().min(1).max(10).default(1), // típicamente 1, ocasionalmente +2-3 por promoción
+  note: z.string().max(200).optional(),
+});
+export type StampInput = z.infer<typeof StampInput>;
+
+export const RedeemInput = z.object({
+  note: z.string().max(200).optional(),
+});
+export type RedeemInput = z.infer<typeof RedeemInput>;
