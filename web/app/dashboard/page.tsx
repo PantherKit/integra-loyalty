@@ -75,15 +75,26 @@ export default function DashboardPage() {
           })}
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
           <h3 className="font-semibold mb-2">Próximos pasos</h3>
           <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside">
-            <li>Configurar tu programa de lealtad (próximamente — Slice 3)</li>
-            <li>Generar tus QRs imprimibles (próximamente — Slice 2)</li>
-            <li>Conectar Apple Wallet + Google Wallet (próximamente — Slice 2)</li>
-            <li>Empezar a recibir clientes en tu tarjeta digital</li>
+            <li>
+              <a href="/dashboard/programs/" className="text-brand-600 hover:underline">Configurar tu programa de lealtad</a>
+            </li>
+            <li>Compartir el link público de tu comercio con clientes</li>
+            <li>Conectar Apple Wallet + Google Wallet (próximamente — Slice 2B)</li>
+            <li>Ver métricas reales en este dashboard (próximamente — Slice 3)</li>
           </ol>
-          <p className="text-xs text-gray-500 mt-4">Esta vista es Slice 1 (Merchant Foundation). Las KPIs son placeholder hasta que haya datos reales.</p>
+        </div>
+
+        <div className="bg-brand-50 border border-brand-100 rounded-xl p-5">
+          <h3 className="font-semibold mb-2">Comparte tu programa</h3>
+          {merchant && (
+            <p className="text-sm text-gray-700 mb-1">
+              Link público: <a href={`/c/?s=${merchant.slug}`} className="text-brand-600 hover:underline">/c/?s={merchant.slug}</a>
+            </p>
+          )}
+          <p className="text-xs text-gray-500">Cualquier cliente abre este link, da su teléfono y obtiene su tarjeta digital al instante.</p>
         </div>
       </main>
     </>

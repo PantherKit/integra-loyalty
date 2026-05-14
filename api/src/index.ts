@@ -4,6 +4,8 @@ import { handle } from 'hono/aws-lambda';
 import { health } from './routes/health';
 import { merchants } from './routes/merchants';
 import { auth } from './routes/auth';
+import { programs } from './routes/programs';
+import { publicRoutes } from './routes/public';
 
 const app = new Hono();
 
@@ -20,6 +22,8 @@ app.get('/', (c) => c.json({ name: 'integra-loyalty-api', env: process.env.ENV ?
 app.route('/health', health);
 app.route('/auth', auth);
 app.route('/merchants', merchants);
+app.route('/programs', programs);
+app.route('/', publicRoutes); // /m/:slug, /m/:slug/customers, /cards/:id
 
 app.notFound((c) => c.json({ error: 'not_found', path: c.req.path }, 404));
 app.onError((err, c) => {

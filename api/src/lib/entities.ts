@@ -32,6 +32,7 @@ export const AddressSchema = z.object({
 export const MerchantSchema = z.object({
   type: z.literal('MERCHANT'),
   tenantId: z.string().uuid(),
+  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min(3).max(40),
   name: z.string().min(2).max(120),
   industry: Industry,
   address: AddressSchema.optional(),
@@ -77,3 +78,75 @@ export const UpdateMerchantInput = MerchantSchema.pick({
   brandColor: true,
 }).partial();
 export type UpdateMerchantInput = z.infer<typeof UpdateMerchantInput>;
+
+// =============================================================================
+// LoyaltyProgram (Slice 2A)
+// =============================================================================
+
+export const RewardTypeSchema = z.enum(['free_item', 'discount_percent', 'discount_amount', 'custom']);
+
+export const LoyaltyProgramSchema = z.object({
+  type: z.literal('PROGRAM'),
+  tenantId: z.string().uuid(),
+  programId: z.string().uuid(),
+  name: z.string().min(2).max(120),
+  description: z.string().max(500).optional(),
+  stampsRequired: z.number().int().min(1).max(50).default(7),
+  rewardType: RewardTypeSchema,
+  rewardDetail: z.string().max(200), // ej. "Café gratis", "20% de descuento", "Postre de la casa"
+  status: z.enum(['active', 'paused', 'archived']).default('active'),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type LoyaltyProgram = z.infer<typeof LoyaltyProgramSchema>;
+
+export const CreateProgramInput = LoyaltyProgramSchema.pick({
+  name: true,
+  description: true,
+  stampsRequired: true,
+  rewardType: true,
+  rewardDetail: true,
+}).extend({ stampsRequired: z.number().int().min(1).max(50).default(7) });
+export type CreateProgramInput = z.infer<typeof CreateProgramInput>;
+
+// =============================================================================
+// Customer (end_customer)
+// =============================================================================
+
+export const CustomerSchema = z.object({
+  type: z.literal('CUSTOMER'),
+  tenantId: z.string().uuid(), // qué tenant lo "descubrió" primero
+  customerId: z.string().uuid(),
+  phone: z.string().regex(/^\+\d{10,15}$/), // E.164, master id (BR Q-7)
+  firstName: z.string().min(1).max(60).optional(),
+  email: z.string().email().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type Customer = z.infer<typeof CustomerSchema>;
+
+export const SignupCustomerInput = z.object({
+  phone: z.string().regex(/^\+\d{10,15}$/),
+  firstName: z.string().min(1).max(60).optional(),
+  email: z.string().email().optional(),
+});
+export type SignupCustomerInput = z.infer<typeof SignupCustomerInput>;
+
+// =============================================================================
+// Card (instancia de programa para 1 customer)
+// =============================================================================
+
+export const CardSchema = z.object({
+  type: z.literal('CARD'),
+  tenantId: z.string().uuid(),
+  cardId: z.string().uuid(),
+  programId: z.string().uuid(),
+  customerId: z.string().uuid(),
+  customerPhone: z.string().regex(/^\+\d{10,15}$/), // denormalizado para queries simples
+  stamps: z.number().int().min(0).default(0),
+  redemptionsCount: z.number().int().min(0).default(0),
+  status: z.enum(['active', 'completed', 'expired', 'cancelled']).default('active'),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type Card = z.infer<typeof CardSchema>;

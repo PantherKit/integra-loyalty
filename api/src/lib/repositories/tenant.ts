@@ -1,8 +1,9 @@
 import { GetCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { randomUUID } from 'node:crypto';
 import { ddb, TABLE_NAME } from '../ddb';
-import { tenantPk, tenantMetadataSk, merchantSk, userSk, emailGsi1Pk, userGsi1Sk } from '../keys';
+import { tenantPk, tenantMetadataSk, merchantSk, userSk, emailGsi1Pk, userGsi1Sk, merchantSlugGsi2Pk } from '../keys';
 import { Tenant, Merchant, User } from '../entities';
+import { generateSlug } from '../slug';
 
 interface CreateTenantParams {
   email: string;
@@ -35,9 +36,12 @@ export async function createTenant(params: CreateTenantParams): Promise<CreateTe
     updatedAt: now,
   };
 
+  const slug = generateSlug(params.merchantName);
+
   const merchant: Merchant = {
     type: 'MERCHANT',
     tenantId,
+    slug,
     name: params.merchantName,
     industry: params.industry,
     createdAt: now,
@@ -68,7 +72,13 @@ export async function createTenant(params: CreateTenantParams): Promise<CreateTe
         {
           Put: {
             TableName: TABLE_NAME,
-            Item: { PK: tenantPk(tenantId), SK: merchantSk(), ...merchant },
+            Item: {
+              PK: tenantPk(tenantId),
+              SK: merchantSk(),
+              GSI2PK: merchantSlugGsi2Pk(slug),
+              GSI2SK: merchantSk(),
+              ...merchant,
+            },
             ConditionExpression: 'attribute_not_exists(PK)',
           },
         },

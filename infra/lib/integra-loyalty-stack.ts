@@ -48,6 +48,14 @@ export class IntegraLoyaltyStack extends cdk.Stack {
       projectionType: ddb.ProjectionType.ALL,
     });
 
+    // GSI2 — lookup global: merchant por slug, customer por phone, card por cardId (Slice 2A)
+    this.table.addGlobalSecondaryIndex({
+      indexName: 'GSI2',
+      partitionKey: { name: 'GSI2PK', type: ddb.AttributeType.STRING },
+      sortKey: { name: 'GSI2SK', type: ddb.AttributeType.STRING },
+      projectionType: ddb.ProjectionType.ALL,
+    });
+
     // ============================================================
     // Cognito User Pool — auth multi-tenant (Slice 1: email+password)
     // ============================================================

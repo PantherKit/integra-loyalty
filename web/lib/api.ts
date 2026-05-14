@@ -70,6 +70,7 @@ export async function getMe(): Promise<{ claims: { sub: string; email: string; t
 // Merchants
 export interface Merchant {
   tenantId: string;
+  slug: string;
   name: string;
   industry: string;
   brandColor?: string;
@@ -82,4 +83,53 @@ export async function getMyMerchant(): Promise<Merchant> {
 
 export async function updateMyMerchant(input: Partial<Merchant>): Promise<Merchant> {
   return request<Merchant>('/merchants/me', { method: 'PATCH', body: JSON.stringify(input) });
+}
+
+// Programs
+export interface LoyaltyProgram {
+  tenantId: string;
+  programId: string;
+  name: string;
+  description?: string;
+  stampsRequired: number;
+  rewardType: 'free_item' | 'discount_percent' | 'discount_amount' | 'custom';
+  rewardDetail: string;
+  status: 'active' | 'paused' | 'archived';
+}
+
+export interface CreateProgramInput {
+  name: string;
+  description?: string;
+  stampsRequired: number;
+  rewardType: LoyaltyProgram['rewardType'];
+  rewardDetail: string;
+}
+
+export async function createProgram(input: CreateProgramInput): Promise<LoyaltyProgram> {
+  return request<LoyaltyProgram>('/programs', { method: 'POST', body: JSON.stringify(input) });
+}
+
+export async function listMyPrograms(): Promise<{ items: LoyaltyProgram[] }> {
+  return request<{ items: LoyaltyProgram[] }>('/programs/me');
+}
+
+// Public (sin auth) — landing del merchant + customer signup + card lookup
+export interface PublicMerchant {
+  merchant: { slug: string; name: string; industry: string; brandColor?: string };
+  program: { programId: string; name: string; description?: string; stampsRequired: number; rewardDetail: string } | null;
+}
+
+export async function getPublicMerchant(slug: string): Promise<PublicMerchant> {
+  return request<PublicMerchant>(`/m/${encodeURIComponent(slug)}`);
+}
+
+export interface Customer { tenantId: string; customerId: string; phone: string; firstName?: string; email?: string; }
+export interface Card { tenantId: string; cardId: string; programId: string; customerId: string; customerPhone: string; stamps: number; status: string; }
+
+export async function signupCustomerToMerchant(slug: string, input: { phone: string; firstName?: string; email?: string; programId?: string; }): Promise<{ customer: Customer; card: Card; program: LoyaltyProgram }> {
+  return request(`/m/${encodeURIComponent(slug)}/customers`, { method: 'POST', body: JSON.stringify(input) });
+}
+
+export async function getCard(cardId: string): Promise<Card> {
+  return request<Card>(`/cards/${encodeURIComponent(cardId)}`);
 }
