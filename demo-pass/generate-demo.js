@@ -2,33 +2,44 @@
 
 require('dotenv').config();
 
-const path = require('path');
-const fs   = require('fs');
-const zlib = require('zlib');
+const path  = require('path');
+const fs    = require('fs');
+const zlib  = require('zlib');
+const sharp = require('sharp');
 const { PKPass } = require('passkit-generator');
 
-/* ─── CONFIG ──────────────────────────────────────────────────────────────
-   Copia .env.example a .env y rellena los valores reales.
-   También puedes exportarlos manualmente:
-     export PASS_TYPE_ID=pass.ai.integragroup.lealtad
-     export TEAM_ID=AB1234WXYZ
-     export SIGNER_PASS=tu-passphrase
-──────────────────────────────────────────────────────────────────────── */
+/* ─── CONFIG ──────────────────────────────────────────────────────────── */
 const CONFIG = {
-  passTypeIdentifier: process.env.PASS_TYPE_ID   || 'pass.ai.integragroup.lealtad',
-  teamIdentifier:     process.env.TEAM_ID         || 'XXXXXXXXXX',
-  signerKeyPassphrase: process.env.SIGNER_PASS    || '',
+  passTypeIdentifier:  process.env.PASS_TYPE_ID || 'pass.ai.integragroup.lealtad',
+  teamIdentifier:      process.env.TEAM_ID       || 'XXXXXXXXXX',
+  signerKeyPassphrase: process.env.SIGNER_PASS   || '',
 };
 
 /* ─── PATHS ───────────────────────────────────────────────────────────── */
-const CERTS_DIR  = path.join(__dirname, 'certs');
-const MODEL_DIR  = path.join(__dirname, 'integra-lealtad.pass');
-const OUTPUT     = path.join(__dirname, 'demo-integra-lealtad.pkpass');
+const CERTS_DIR = path.join(__dirname, 'certs');
+const MODEL_DIR = path.join(__dirname, 'integra-lealtad.pass');
+const OUTPUT    = path.join(__dirname, 'demo-integra-lealtad.pkpass');
 
-/* ─── PNG GENERATOR (pure Node.js — sin dependencias externas) ────────────
-   Genera PNGs de color sólido para los assets requeridos por Apple Wallet.
-   Para producción, estos deberían ser imágenes de branding del comercio.
-──────────────────────────────────────────────────────────────────────── */
+/* ─── DEMO DATA ───────────────────────────────────────────────────────── */
+const DEMO_DATA = {
+  merchant: {
+    name:    'Café Roma',
+    address: 'Orizaba 161, Roma Norte, CDMX',
+    lat:     19.4194,
+    lon:    -99.1566,
+  },
+  customer: {
+    name:     'Juan García',
+    memberId: 'DEMO-001',
+    stamps:   5,
+    stampsToReward: '3 sellos',
+    prizes:   '0 premios',
+    tier:     'Gold',
+    since:    'Ene 2024',
+  },
+};
+
+/* ─── SOLID-COLOR PNG (pure Node.js, para íconos pequeños) ───────────── */
 function crc32(buf) {
   let crc = 0xFFFFFFFF;
   for (const byte of buf) {
@@ -47,37 +58,20 @@ function pngChunk(type, data) {
   return Buffer.concat([lenBuf, typeBytes, data, crcBuf]);
 }
 
-/**
- * Crea un PNG de color sólido RGB sin dependencias externas.
- * @param {number} width
- * @param {number} height
- * @param {[number, number, number]} rgb - valores 0-255
- * @returns {Buffer}
- */
 function solidColorPNG(width, height, [r, g, b]) {
-  const PNG_SIG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-
-  const ihdr = Buffer.allocUnsafe(13);
+  const PNG_SIG  = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const ihdr     = Buffer.allocUnsafe(13);
   ihdr.writeUInt32BE(width,  0);
   ihdr.writeUInt32BE(height, 4);
-  ihdr[8]  = 8; // bit depth
-  ihdr[9]  = 2; // color type: RGB
-  ihdr[10] = 0; // compression
-  ihdr[11] = 0; // filter
-  ihdr[12] = 0; // interlace
+  ihdr[8] = 8; ihdr[9] = 2; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
 
-  // Cada scanline: 1 byte de filtro (none) + width*3 bytes RGB
-  const scanline = Buffer.allocUnsafe(1 + width * 3);
-  scanline[0] = 0;
+  const row = Buffer.allocUnsafe(1 + width * 3);
+  row[0] = 0;
   for (let x = 0; x < width; x++) {
-    scanline[1 + x * 3] = r;
-    scanline[2 + x * 3] = g;
-    scanline[3 + x * 3] = b;
+    row[1 + x * 3] = r; row[2 + x * 3] = g; row[3 + x * 3] = b;
   }
-
-  // Repetimos el scanline height veces
-  const rawData = Buffer.concat(Array.from({ length: height }, () => scanline));
-  const idat    = zlib.deflateSync(rawData, { level: 6 });
+  const raw  = Buffer.concat(Array.from({ length: height }, () => row));
+  const idat = zlib.deflateSync(raw, { level: 6 });
 
   return Buffer.concat([
     PNG_SIG,
@@ -87,46 +81,128 @@ function solidColorPNG(width, height, [r, g, b]) {
   ]);
 }
 
-/* ─── ASSETS ──────────────────────────────────────────────────────────────
-   Apple Wallet requiere estas dimensiones específicas.
-   strip.png aparece detrás de los primaryFields en un storeCard.
-──────────────────────────────────────────────────────────────────────── */
-const BRAND_COLOR  = [30,  60,  120]; // Azul Integra (fondo)
-const ACCENT_COLOR = [20, 100,  180]; // Azul más claro para strip
+/* ─── SVG STRIP (via sharp) ───────────────────────────────────────────── */
 
-const REQUIRED_ASSETS = [
-  { name: 'icon.png',     w:  29, h:  29, color: BRAND_COLOR  },
-  { name: 'icon@2x.png',  w:  58, h:  58, color: BRAND_COLOR  },
-  { name: 'icon@3x.png',  w:  87, h:  87, color: BRAND_COLOR  },
-  { name: 'logo.png',     w: 160, h:  50, color: BRAND_COLOR  },
-  { name: 'logo@2x.png',  w: 320, h: 100, color: BRAND_COLOR  },
-  { name: 'strip.png',    w: 375, h: 123, color: ACCENT_COLOR },
-  { name: 'strip@2x.png', w: 750, h: 246, color: ACCENT_COLOR },
-];
+/**
+ * Dibuja un ícono outline estilo Lucide/Hugeicons. Evitamos dependencias de
+ * icon packs para mantener el generador portable y sin riesgo de licencias.
+ */
+function stampIcon(cx, cy, size, isActive) {
+  const color = isActive ? '#F0F5EB' : '#A0B0A0';
+  const opacity = isActive ? '1' : '0.4';
+  const strokeWidth = 1.9;
+  const scale = size / 24;
+  const x = cx - size / 2;
+  const y = cy - size / 2;
 
-function ensureAssets() {
-  if (!fs.existsSync(MODEL_DIR)) {
-    fs.mkdirSync(MODEL_DIR, { recursive: true });
+  return `
+    <g transform="translate(${x} ${y}) scale(${scale})"
+       fill="none"
+       stroke="${color}"
+       stroke-width="${strokeWidth}"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       opacity="${opacity}">
+      <path d="M10 2v2"/>
+      <path d="M14 2v2"/>
+      <path d="M6 8h11v6a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V8Z"/>
+      <path d="M17 9h1a3 3 0 0 1 0 6h-1"/>
+      <path d="M4 21h16"/>
+    </g>`;
+}
+
+/**
+ * Construye el SVG del strip a las dimensiones dadas.
+ * Diseñado a base @1x (375×123) y escalado proporcionalmente.
+ */
+function buildStripSVG(w, h) {
+  const s = w / 375;
+  const totalStamps = 8;
+  const filled = Math.min(DEMO_DATA.customer.stamps, totalStamps);
+  const size = 32 * s;
+  const colGap = 46 * s;
+  const rowGap = 44 * s;
+  const gridWidth = (3 * colGap) + size;
+  const startX = (w - gridWidth) / 2 + size / 2;
+  const startY = 38 * s;
+
+  const stamps = Array.from({ length: totalStamps }, (_, i) => {
+    const row = i < 4 ? 0 : 1;
+    const col = i % 4;
+    const cx = startX + col * colGap;
+    const cy = startY + row * rowGap;
+    return stampIcon(cx, cy, size, i < filled);
+  }).join('\n');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#3C5046"/>
+      <stop offset="100%" stop-color="#3C5046"/>
+    </linearGradient>
+  </defs>
+  <rect width="${w}" height="${h}" fill="url(#bg)"/>
+  ${stamps}
+</svg>`;
+}
+
+/**
+ * Genera strip.png y strip@2x.png usando sharp para rasterizar el SVG.
+ * Siempre regenera (no "si no existe") para reflejar cambios en DEMO_DATA.
+ */
+async function generateStrip() {
+  const sizes = [
+    { name: 'strip.png',    w: 375, h: 123 },
+    { name: 'strip@2x.png', w: 750, h: 246 },
+  ];
+
+  for (const { name, w, h } of sizes) {
+    const svg  = buildStripSVG(w, h);
+    const dest = path.join(MODEL_DIR, name);
+    await sharp(Buffer.from(svg)).png().toFile(dest);
   }
 
+  console.log('  [OK] Strip generado (SVG + sharp)');
+}
+
+/* ─── ASSETS DE ICONO / LOGO ─────────────────────────────────────────── */
+const ICON_ASSETS = [
+  { name: 'icon.png',    w:  29, h:  29 },
+  { name: 'icon@2x.png', w:  58, h:  58 },
+  { name: 'icon@3x.png', w:  87, h:  87 },
+];
+
+const BRAND_COLOR = [30, 60, 120];
+
+function ensureIconAssets() {
+  if (!fs.existsSync(MODEL_DIR)) fs.mkdirSync(MODEL_DIR, { recursive: true });
+
   let created = 0;
-  for (const { name, w, h, color } of REQUIRED_ASSETS) {
+  for (const { name, w, h } of ICON_ASSETS) {
     const dest = path.join(MODEL_DIR, name);
     if (!fs.existsSync(dest)) {
-      fs.writeFileSync(dest, solidColorPNG(w, h, color));
+      fs.writeFileSync(dest, solidColorPNG(w, h, BRAND_COLOR));
       created++;
     }
   }
 
   if (created > 0) {
-    console.log(`  [OK] ${created} assets PNG creados en pass-model/`);
-    console.log('       (Reemplaza con imagenes reales de branding para produccion)');
+    console.log(`  [OK] ${created} iconos PNG creados`);
   } else {
-    console.log('  [OK] Assets PNG ya existentes');
+    console.log('  [OK] Iconos ya existentes');
   }
 }
 
-/* ─── VALIDACION DE CERTIFICADOS ─────────────────────────────────────── */
+function removeLogoAssets() {
+  for (const name of ['logo.png', 'logo@2x.png', 'logo@3x.png']) {
+    const logoPath = path.join(MODEL_DIR, name);
+    if (fs.existsSync(logoPath)) fs.unlinkSync(logoPath);
+  }
+
+  console.log('  [OK] Logo image omitido; Wallet usará logoText');
+}
+
+/* ─── VALIDACIONES ────────────────────────────────────────────────────── */
 function validateCerts() {
   const required = ['wwdr.pem', 'signerCert.pem', 'signerKey.pem'];
   const missing  = required.filter(f => !fs.existsSync(path.join(CERTS_DIR, f)));
@@ -135,23 +211,16 @@ function validateCerts() {
 
   console.error('\n[ERROR] Faltan certificados en certs/:\n');
   missing.forEach(f => console.error(`  - ${f}`));
-  console.error('\nSigue el README.md (sección "Preparar Certificados") para obtenerlos.');
-  console.error('Referencia rapida:');
-  console.error('  openssl pkcs12 -legacy -in cert.p12 -clcerts -nokeys -out certs/signerCert.pem -passin pass:TU_PASSWORD');
-  console.error('  openssl pkcs12 -legacy -in cert.p12 -nocerts -out certs/signerKey.pem -passin pass:TU_PASSWORD -passout pass:TU_PASSPHRASE');
-  console.error('  openssl x509 -inform DER -in AppleWWDRCAG4.cer -out certs/wwdr.pem\n');
+  console.error('\nSigue el README.md (seccion "Preparar Certificados").');
   process.exit(1);
 }
 
 function validateConfig() {
   const warnings = [];
-
-  if (CONFIG.teamIdentifier === 'XXXXXXXXXX') {
+  if (CONFIG.teamIdentifier === 'XXXXXXXXXX')
     warnings.push('TEAM_ID no configurado — define la variable de entorno TEAM_ID');
-  }
-  if (!CONFIG.signerKeyPassphrase) {
+  if (!CONFIG.signerKeyPassphrase)
     warnings.push('SIGNER_PASS vacio — si tu llave tiene passphrase, el firmado fallara');
-  }
 
   if (warnings.length > 0) {
     console.warn('\n[ADVERTENCIA]');
@@ -171,7 +240,9 @@ async function main() {
   validateCerts();
 
   console.log('Preparando assets...');
-  ensureAssets();
+  ensureIconAssets();
+  removeLogoAssets();
+  await generateStrip();
 
   console.log('Firmando y empaquetando pass...');
   const pass = await PKPass.from(
@@ -185,7 +256,6 @@ async function main() {
       },
     },
     {
-      // Estos overrides reemplazan los PLACEHOLDERs del pass.json
       passTypeIdentifier: CONFIG.passTypeIdentifier,
       teamIdentifier:     CONFIG.teamIdentifier,
     },
@@ -196,38 +266,20 @@ async function main() {
 
   console.log('\n[OK] Pass generado exitosamente:');
   console.log(`     ${OUTPUT}`);
-  console.log('\n--- Como instalar en iPhone para la demo ---');
-  console.log('');
-  console.log('  Opcion A — AirDrop (mas rapido para demo):');
-  console.log('    1. Abre Finder, localiza demo-integra-lealtad.pkpass');
-  console.log('    2. Click derecho > Compartir > AirDrop al iPhone');
-  console.log('    3. En el iPhone acepta y Apple Wallet se abrira automaticamente');
-  console.log('');
-  console.log('  Opcion B — Servidor HTTP local (cualquier iPhone en la misma red):');
-  console.log('    1. Ejecuta en este directorio:');
-  console.log('         npx serve . --cors');
-  console.log('    2. Abre Safari en el iPhone y ve a:');
-  console.log('         http://[TU-IP-LOCAL]:3000/demo-integra-lealtad.pkpass');
-  console.log('    3. Safari reconoce el MIME type y lo abre en Wallet automaticamente');
-  console.log('');
-  console.log('  Opcion C — S3 temporal:');
-  console.log('    aws s3 cp demo-integra-lealtad.pkpass s3://tu-bucket/demo.pkpass --acl public-read');
-  console.log('    aws s3 presign s3://tu-bucket/demo.pkpass --expires-in 86400');
-  console.log('    (Abre el link presignado desde Safari en el iPhone)');
-  console.log('');
-  console.log('NOTA: El link DEBE abrirse desde Safari en iOS.');
-  console.log('      Chrome y otros browsers no abren Apple Wallet.');
+  console.log('\n--- Como instalar en iPhone ---');
+  console.log('  AirDrop: click derecho en el .pkpass > Compartir > AirDrop');
+  console.log('  HTTP:    npx serve . --cors  →  abre desde Safari en iPhone');
   console.log('');
 }
 
 main().catch(err => {
   console.error('\n[ERROR] Fallo al generar el pass:');
   console.error(err.message || err);
-  if (err.message && err.message.includes('certificate')) {
+  if (err.message?.includes('certificate')) {
     console.error('\nPosibles causas:');
-    console.error('  - El passTypeIdentifier del certificado no coincide con PASS_TYPE_ID');
-    console.error('  - La passphrase de signerKey.pem es incorrecta (revisa SIGNER_PASS)');
-    console.error('  - El wwdr.pem no corresponde a la version G4 (G4 es la recomendada)');
+    console.error('  - passTypeIdentifier del cert no coincide con PASS_TYPE_ID');
+    console.error('  - Passphrase incorrecta (revisa SIGNER_PASS)');
+    console.error('  - wwdr.pem no es G4');
   }
   process.exit(1);
 });

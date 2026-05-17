@@ -6,9 +6,9 @@
   "serialNumber": "demo-001",
   "description": "Tarjeta de Lealtad Digital",
 
-  "foregroundColor": "rgb(255, 255, 255)",
-  "backgroundColor": "rgb(30, 60, 120)",
-  "labelColor": "rgb(180, 210, 255)",
+  "foregroundColor": "rgb(240, 245, 235)",
+  "backgroundColor": "rgb(60, 80, 70)",
+  "labelColor": "rgb(200, 210, 190)",
   "logoText": "Café Roma",
 
   "barcodes": [
@@ -16,43 +16,22 @@
       "message": "INTEGRA-DEMO-001",
       "format": "PKBarcodeFormatQR",
       "messageEncoding": "iso-8859-1",
-      "altText": "ID: DEMO-001"
+      "altText": "Powered by Integra Lealtad"
     }
   ],
 
   "storeCard": {
-    "headerFields": [
-      {
-        "key": "tier",
-        "label": "NIVEL",
-        "value": "Gold"
-      }
-    ],
-    "primaryFields": [
-      {
-        "key": "points",
-        "label": "PUNTOS",
-        "value": "1,250",
-        "changeMessage": "Tienes %@ puntos acumulados"
-      }
-    ],
     "secondaryFields": [
       {
-        "key": "member",
-        "label": "MIEMBRO",
-        "value": "Juan García"
+        "key": "stamps_to_reward",
+        "label": "USA LOS SELLOS HASTA...",
+        "value": "3 sellos",
+        "changeMessage": "Te faltan %@ para tu próximo premio"
       },
       {
-        "key": "since",
-        "label": "DESDE",
-        "value": "Ene 2024"
-      }
-    ],
-    "auxiliaryFields": [
-      {
-        "key": "promo",
-        "label": "PROMOCIÓN",
-        "value": "2x puntos este fin de semana"
+        "key": "prizes",
+        "label": "RECOMPENSAS DISPONIBLES",
+        "value": "0 premios"
       }
     ],
     "backFields": [
@@ -60,6 +39,21 @@
         "key": "merchant_name",
         "label": "Comercio",
         "value": "Café Roma"
+      },
+      {
+        "key": "member",
+        "label": "Miembro",
+        "value": "Juan García"
+      },
+      {
+        "key": "since",
+        "label": "Miembro desde",
+        "value": "Ene 2024"
+      },
+      {
+        "key": "tier_back",
+        "label": "Nivel",
+        "value": "Gold"
       },
       {
         "key": "merchant_addr",
@@ -70,6 +64,11 @@
         "key": "member_id",
         "label": "ID de Membresía",
         "value": "DEMO-001"
+      },
+      {
+        "key": "promo",
+        "label": "Promoción Activa",
+        "value": "2x puntos este fin de semana"
       },
       {
         "key": "terms",
