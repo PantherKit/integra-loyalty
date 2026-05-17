@@ -1,0 +1,21 @@
+node_modules/
+package-lock.json
+
+# Output generado
+*.pkpass
+
+# Variables de entorno — NUNCA al repo
+.env
+
+# Certificados y keys — NUNCA al repo
+*.p12
+*.pem
+*.key
+certs/*.cer
+AppleWWDRCAG4.cer
+
+# Assets PNG generados en runtime (se crean con `npm run generate`)
+integra-lealtad.pass/*.png
+
+# macOS
+.DS_Store
