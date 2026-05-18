@@ -1,10 +1,33 @@
 # Integra Lealtad — Demo Pass Apple Wallet
 
-Pass de demostración instalable en Apple Wallet. Genera un `.pkpass` firmado con datos de un comercio demo (Café Roma).
+Demo de tarjeta de lealtad para Apple Wallet (comercio demo: **Marquesitas OMO**).
+
+Hay **dos modos**, un solo comando: `npm run demo`.
+
+| Modo | Cuándo | Salida |
+|---|---|---|
+| **Preview visual** (siempre) | No requiere cert Apple ni `npm install` | `dist/preview.html` + `dist/preview.svg` — frente y reverso de la tarjeta con el branding del comercio. Esto se le enseña al cliente HOY. |
+| **`.pkpass` firmado** (auto) | Cuando existen los 3 PEM en `certs/` | `demo-integra-lealtad.pkpass` instalable en iPhone |
+
+`demo.js` detecta solo si hay certificado y hace lo que corresponda, sin cambiar
+código ni comandos.
+
+```bash
+cd demo-pass
+npm run demo                    # sin cert: genera el preview visual
+open dist/preview.html          # ver la tarjeta (cualquier navegador)
+```
+
+> El preview NO tiene dependencias (solo Node built-in). No se bloquea por la
+> falta de la cuenta Apple Developer ($99/año, ~1 semana por DUNS).
+
+**Para conseguir y conectar el certificado Apple real** (abrir cuenta Apple
+Developer Organization, DUNS, Pass Type ID, generar y colocar los PEM) ver
+**[`PRODUCTION.md`](./PRODUCTION.md) — Parte A**, y los Pasos 1-5 de abajo.
 
 ---
 
-## Prerequisitos
+## Prerequisitos (solo para el `.pkpass` firmado)
 
 - Apple Developer Program activo (cuenta de organización de Integra)
 - Node.js >= 18
@@ -184,15 +207,19 @@ npx qrcode-terminal "http://192.168.1.100:3000/demo-integra-lealtad.pkpass"
 
 ## Personalizar el pass demo
 
-Edita `pass-model/pass.json` para cambiar:
+Edita `integra-lealtad.pass/pass.json` para cambiar:
 - **logoText**: nombre del comercio
-- **primaryFields.value**: puntos del cliente
-- **storeCard.secondaryFields**: nombre del cliente y fecha de registro
-- **backgroundColor / foregroundColor**: colores de branding
+- **storeCard.primaryFields.value**: sellos/puntos del cliente
+- **storeCard.secondaryFields / backFields**: datos del cliente y comercio
+- **backgroundColor / foregroundColor / labelColor**: colores de branding
 - **barcodes.message**: identificador del cliente
-- **locations**: coordenadas del comercio (para sugerencias en lock screen)
+- **locations**: coordenadas del comercio (geofence en lock screen)
 
-Para assets reales (logo, ícono, strip image), reemplaza los archivos PNG generados en `pass-model/` con las imágenes del comercio. Borra los archivos PNG existentes y el script los regenerará como placeholder si no los encuentras.
+`pass.json` es la única fuente de verdad: el mismo archivo alimenta el preview
+visual (`npm run preview`) y el `.pkpass` firmado. Tras editarlo, vuelve a
+correr `npm run demo`.
+
+Para assets reales (logo, ícono, strip image), reemplaza los PNG generados en `integra-lealtad.pass/` con las imágenes del comercio. Borra los PNG existentes y el script los regenerará como placeholder si no los encuentra.
 
 ---
 
@@ -201,11 +228,15 @@ Para assets reales (logo, ícono, strip image), reemplaza los archivos PNG gener
 ```
 demo-pass/
 ├── .env.example          <- Plantilla de variables de entorno
-├── .gitignore            <- Excluye certs/ y *.pkpass del repo
+├── .gitignore            <- Excluye certs/, *.pkpass, dist/ del repo
 ├── package.json
-├── generate-demo.js      <- Script de generación del .pkpass
-├── pass-model/
-│   ├── pass.json         <- Template del pass (storeCard)
+├── demo.js               <- Orquestador: preview siempre + .pkpass si hay cert
+├── preview.js            <- Artefacto visual sin cert (cero dependencias)
+├── generate-demo.js      <- Firma y empaqueta el .pkpass (requiere certs)
+├── PRODUCTION.md         <- Cómo obtener el cert Apple + ruta a Lambda
+├── dist/                 <- preview.html / preview.svg (gitignored)
+├── integra-lealtad.pass/
+│   ├── pass.json         <- Template del pass (storeCard) — fuente de verdad
 │   └── *.png             <- Assets generados (gitignored)
 └── certs/
     ├── .gitkeep

@@ -21,6 +21,21 @@
   ],
 
   "storeCard": {
+    "headerFields": [
+      {
+        "key": "tier",
+        "label": "NIVEL",
+        "value": "Gold"
+      }
+    ],
+    "primaryFields": [
+      {
+        "key": "stamps",
+        "label": "SELLOS ACUMULADOS",
+        "value": "6 / 8",
+        "changeMessage": "Ahora tienes %@ sellos"
+      }
+    ],
     "secondaryFields": [
       {
         "key": "stamps_to_reward",
@@ -87,7 +102,7 @@
     {
       "longitude": -99.1566,
       "latitude": 19.4194,
-      "relevantText": "¡Estás cerca de Café Roma! Gana el doble de puntos hoy."
+      "relevantText": "¡Estás cerca de Marquesitas OMO! Gana el doble de sellos hoy."
     }
   ]
 }

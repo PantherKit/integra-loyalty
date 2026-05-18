@@ -4,6 +4,8 @@
   "description": "Generador de pass de demostración para Apple Wallet — Integra Lealtad",
   "main": "generate-demo.js",
   "scripts": {
+    "demo": "node demo.js",
+    "preview": "node preview.js",
     "generate": "node generate-demo.js"
   },
   "dependencies": {

@@ -31,7 +31,7 @@ function PublicMerchantContent() {
     setSubmitting(true);
     try {
       const result = await signupCustomerToMerchant(slug, form);
-      router.push(`/wallet/?id=${result.card.cardId}`);
+      router.push(`/wallet/?id=${result.card.cardId}&s=${encodeURIComponent(slug)}`);
     } catch (e: any) {
       const body = e?.body as { error?: string };
       if (body?.error === 'no_active_program') setError('Este comercio aún no tiene un programa activo. Intenta más tarde.');

@@ -3,6 +3,7 @@ package-lock.json
 
 # Output generado
 *.pkpass
+dist/
 
 # Variables de entorno — NUNCA al repo
 .env
