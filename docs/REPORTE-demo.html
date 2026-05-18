@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integra Loyalty — Reporte de la demo SaaS</title>
+<style>
+  :root{--brand:#4f46e5;--brand-d:#4338ca;--ink:#111827;--mut:#6b7280;--bg:#f7f7f9;--ok:#059669;--warn:#d97706;--card:#fff;--line:#e5e7eb}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);padding:0 0 80px}
+  .wrap{max-width:920px;margin:0 auto;padding:0 20px}
+  header{background:linear-gradient(150deg,#191919,#312e81);color:#fff;padding:54px 0 46px;margin-bottom:38px}
+  header .wrap{display:flex;flex-direction:column;gap:10px}
+  .tag{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#c7d2fe}
+  h1{font-size:30px;font-weight:650;letter-spacing:-.02em}
+  header p{color:#cbd5e1;max-width:640px}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);padding:6px 12px;border-radius:999px;font-size:13px}
+  h2{font-size:20px;margin:40px 0 16px;display:flex;align-items:center;gap:10px}
+  h2 .n{width:28px;height:28px;border-radius:8px;background:var(--brand);color:#fff;font-size:14px;display:grid;place-items:center;flex:0 0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}h1{font-size:24px}}
+  ul{margin:8px 0 0 18px}li{margin:5px 0}
+  .k{font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:6px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  .b{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
+  .b-ok{background:#d1fae5;color:#065f46}.b-fix{background:#ede9fe;color:#5b21b6}.b-warn{background:#fef3c7;color:#92400e}
+  code{background:#eef2ff;color:#3730a3;padding:1px 6px;border-radius:5px;font-size:13.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .price{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
+  .tier{flex:1;min-width:170px;border:1px solid var(--line);border-radius:14px;padding:16px}
+  .tier.hot{border-color:var(--brand);box-shadow:0 6px 20px -10px rgba(79,70,229,.5)}
+  .tier h4{font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+  .tier .amt{font-size:26px;font-weight:680;margin:6px 0}
+  .tier .amt small{font-size:13px;color:var(--mut);font-weight:500}
+  .flow{counter-reset:s;margin-top:8px}
+  .flow div{position:relative;padding:8px 0 8px 40px}
+  .flow div::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:6px;width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;font-size:13px;display:grid;place-items:center}
+  footer{color:var(--mut);font-size:13px;text-align:center;margin-top:46px}
+  .ok{color:var(--ok);font-weight:600}.warn{color:var(--warn);font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="tag">Integra Group AI · Integra Loyalty</span>
+    <h1>Reporte: demo SaaS lista + homologación</h1>
+    <p>Tarjetas de lealtad digital sin app (Apple/Google Wallet) para pymes de México. Trabajo entregado y verificado el 18&nbsp;may&nbsp;2026.</p>
+    <div class="meta">
+      <span class="pill">Rama homologada: <b>dev</b></span>
+      <span class="pill">También en <b>feat/saas-demo</b></span>
+      <span class="pill">Subido a GitHub ✓</span>
+      <span class="pill">7/7 tareas completas</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="n">1</span> Una sola rama con todo</h2>
+  <div class="card">
+    Estaban abiertas <span class="k">3 ramas sueltas</span> (backend+web, Apple Pass, y el documento de onboarding) más 2 Pull Requests sin revisar. Las fusioné sin conflictos y construí lo nuevo encima. Hoy todo vive en <code>dev</code> (y su gemela <code>feat/saas-demo</code>), ya en GitHub.
+    <ul>
+      <li><span class="k">Homologar</span> = unificar trabajo disperso en una sola línea de código. Antes: 3 ramas + 2 PRs. Ahora: 1 rama <code>dev</code>.</li>
+      <li>Pendiente opcional: abrir un PR de <code>dev</code> que reemplace los PRs #1 y #2.</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">2</span> Front office — lo que ve el cliente</h2>
+  <div class="card">
+    <p>Construido primero, con prioridad. Pensado para pyme chica de estado: <span class="k">plug & play</span>, sin diseñador, sin app que descargar.</p>
+    <div class="grid" style="margin-top:14px">
+      <div>
+        <p class="k">Tarjeta-pase tipo Wallet</p>
+        <ul><li>Aspecto real de Apple/Google Wallet, con el color y marca de cada comercio</li><li>Frente y reverso, sellos, premio, código</li></ul>
+      </div>
+      <div>
+        <p class="k">Onboarding plug-and-play</p>
+        <ul><li>Editor con vista previa <span class="k">en vivo</span></li><li>Elige color y premio → enlace + QR para el mostrador</li></ul>
+      </div>
+      <div>
+        <p class="k">PWA (app instalable)</p>
+        <ul><li>Se instala como app y funciona aunque se caiga la señal</li><li>Clave para conexiones inestables fuera de las grandes ciudades</li></ul>
+      </div>
+      <div>
+        <p class="k">Alta del cliente final</p>
+        <ul><li>Escanea QR → da su teléfono → tarjeta lista en ~10 s</li><li>Sin app, sin contraseña</li></ul>
+      </div>
+    </div>
+    <p style="margin-top:16px" class="k">Flujo de onboarding (4 pasos):</p>
+    <div class="flow">
+      <div>Datos del negocio (nombre, giro, iniciales)</div>
+      <div>Diseño (color de la tarjeta)</div>
+      <div>Premio y cuántos sellos</div>
+      <div>Crear cuenta → enlace + QR del comercio</div>
+    </div>
+  </div>
+
+  <h2><span class="n">3</span> Back office — lo que vende</h2>
+  <div class="card">
+    Panel del comercio con aspecto de SaaS serio (no de prototipo):
+    <ul>
+      <li><span class="k">Resumen</span>: métricas (clientes, sellos, canjes) + vista previa de su tarjeta</li>
+      <li><span class="k">Dar sello / Canjear</span>: busca por teléfono, ve la tarjeta real, confirma con un diálogo propio</li>
+      <li><span class="k">Compartir</span>: enlace público + <span class="k">QR escaneable</span> ("ponlo en tu mostrador")</li>
+      <li>Sesión validada de verdad contra el servidor antes de mostrar nada</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">4</span> Seguridad endurecida</h2>
+  <div class="card">
+    <table>
+      <tr><th>Hallazgo</th><th>Riesgo</th><th>Estado</th></tr>
+      <tr><td>C1 · <code>GET /cards/:id</code> filtraba datos personales de clientes de otros comercios</td><td>Privacidad / LFPDPPP</td><td><span class="b b-ok">Resuelto</span></td></tr>
+      <tr><td>C2 · No se validaba el rol en operaciones sensibles</td><td>Fraude de lealtad</td><td><span class="b b-ok">Resuelto</span></td></tr>
+      <tr><td>C2-defensa · Token sin rol heredaba privilegios de comercio</td><td>Escalada futura</td><td><span class="b b-ok">Resuelto</span></td></tr>
+      <tr><td>A4 · Atajo de desarrollo podía abrir el aislamiento por accidente</td><td>Acceso cross-tenant</td><td><span class="b b-ok">Resuelto</span></td></tr>
+      <tr><td>QR del mostrador era <b>100% ilegible</b> (detectado en autorevisión)</td><td>Demo fallaría con el cliente</td><td><span class="b b-fix">Reemplazado por librería probada</span></td></tr>
+    </table>
+    <p style="margin-top:12px">Añadí <span class="k">pruebas automáticas</span> (vitest) de los guardas de seguridad: 4 tests, en verde.</p>
+  </div>
+
+  <h2><span class="n">5</span> Backend en Lambda &nbsp;·&nbsp; Apple Pass</h2>
+  <div class="card">
+    <p><span class="k">Backend</span> (doc <code>docs/architecture/backend-lambda.md</code>): es <span class="k">una sola Lambda</span> (función sin servidor que solo cuesta cuando se usa) con router Hono → base de datos DynamoDB + login Cognito. Costo estimado <span class="k">~$6–20 USD/mes</span> con 100 comercios. Documentado dónde encajan los endpoints de Wallet.</p>
+    <p style="margin-top:10px"><span class="k">Apple Pass</span>: demo reproducible <span class="k">sin necesitar el certificado de Apple</span> (genera una vista previa visual fiel). Sin credenciales filtradas. Ruta a producción en <code>demo-pass/PRODUCTION.md</code>.</p>
+  </div>
+
+  <h2><span class="n">6</span> Precios para vender</h2>
+  <div class="card">
+    Investigación de mercado MX/US (doc <code>docs/pricing.md</code>). El mercado MX ancla en Tago $300/mes; competidores US cobran $25–199 USD.
+    <div class="price">
+      <div class="tier"><h4>Básico</h4><div class="amt">$349<small> MXN/mes</small></div><div style="font-size:13px;color:var(--mut)">1 sucursal, Wallet, push ilimitado</div></div>
+      <div class="tier hot"><h4>Pro ★</h4><div class="amt">$649<small> MXN/mes</small></div><div style="font-size:13px;color:var(--mut)">Clientes ilimitados, campañas, onboarding WhatsApp</div></div>
+      <div class="tier"><h4>Multi-sucursal</h4><div class="amt">$1,190<small> MXN/mes</small></div><div style="font-size:13px;color:var(--mut)">3 sucursales, roles, soporte prioritario</div></div>
+    </div>
+    <p style="margin-top:12px;font-size:14px;color:var(--mut)">Setup asistido $990–1,490 MXN (gratis como gancho en Pro+). Anual = 2 meses gratis.</p>
+  </div>
+
+  <h2><span class="n">7</span> Verificación final</h2>
+  <div class="card">
+    <table>
+      <tr><th>Componente</th><th>Comprobación</th><th>Resultado</th></tr>
+      <tr><td>web (front + back)</td><td>lint + build</td><td class="ok">✓ verde</td></tr>
+      <tr><td>api (backend)</td><td>typecheck + 4 tests</td><td class="ok">✓ verde</td></tr>
+      <tr><td>infra (CDK)</td><td>synth</td><td class="ok">✓ verde</td></tr>
+      <tr><td>demo Apple Pass</td><td>genera preview sin cert</td><td class="ok">✓ verde</td></tr>
+    </table>
+  </div>
+
+  <h2><span class="n">→</span> Pendiente para producción (no para la demo)</h2>
+  <div class="card">
+    La autorevisión confirma: <span class="ok">lista para enseñar a un cliente hoy</span>. Para ir a producción:
+    <ul>
+      <li>Certificado real de Apple (trámite DUNS, ~1 semana) + cuenta Apple Developer Organization</li>
+      <li>Cablear los endpoints de Wallet (generar el pase, push de actualización) en la Lambda</li>
+      <li>Más tests de cobertura y restringir CORS antes de abrir al público</li>
+    </ul>
+  </div>
+
+  <footer>
+    Integra Group AI · Integra Loyalty · Reporte generado el 18 may 2026 · Rama <b>dev</b> en github.com/PantherKit/integra-loyalty
+  </footer>
+</div>
+</body>
+</html>
