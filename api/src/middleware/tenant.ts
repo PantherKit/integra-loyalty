@@ -36,8 +36,9 @@ export async function requireTenant(c: Context, next: Next) {
     }
   }
 
-  // Dev fallback — solo si no hay JWT y env=dev
-  if (process.env.ENV === 'dev') {
+  // Dev fallback — requiere DOS condiciones explícitas para no abrir
+  // aislamiento por un ENV=dev accidental en infra alcanzable (hallazgo A4).
+  if (process.env.ENV === 'dev' && process.env.ALLOW_HEADER_AUTH === 'true') {
     const headerTenant = c.req.header('x-tenant-id');
     if (headerTenant) {
       c.set('tenantId', headerTenant);
@@ -50,4 +51,22 @@ export async function requireTenant(c: Context, next: Next) {
   }
 
   return c.json({ error: 'unauthorized', hint: 'missing Bearer token' }, 401);
+}
+
+/** Roles con permiso para operar el back office del comercio. */
+export const MERCHANT_ROLES = ['owner', 'merchant', 'staff', 'integra_admin'] as const;
+
+/**
+ * Autorización por rol (hallazgo C2). Debe ir DESPUÉS de requireTenant.
+ * Bloquea tokens que no sean del comercio (p.ej. un futuro end_customer)
+ * en operaciones sensibles como stamp/redeem.
+ */
+export function requireRole(...allowed: string[]) {
+  return async (c: Context, next: Next) => {
+    const role = c.get('userRole');
+    if (!role || !allowed.includes(role)) {
+      return c.json({ error: 'forbidden', hint: 'rol sin permiso para esta operación' }, 403);
+    }
+    await next();
+  };
 }

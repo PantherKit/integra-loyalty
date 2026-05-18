@@ -1,164 +1,281 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Users, Award, LogOut, Plus, Gift, Settings, ScanLine, RefreshCw } from 'lucide-react';
-import { clearToken, getMe, getMyMerchant, getToken, getActivity, type Merchant, type Transaction } from '@/lib/api';
+import Link from 'next/link';
+import {
+  Users,
+  Award,
+  Gift,
+  Plus,
+  ScanLine,
+  Share2,
+  RefreshCw,
+  ArrowUpRight,
+} from 'lucide-react';
+import LoyaltyPass from '@/components/LoyaltyPass';
+import { useDashboard } from '@/components/dashboard-context';
+import {
+  getActivity,
+  listMyPrograms,
+  type LoyaltyProgram,
+  type Transaction,
+} from '@/lib/api';
 
 function formatRelative(iso: string): string {
   const d = new Date(iso);
   const diff = Date.now() - d.getTime();
-  if (diff < 60_000) return 'ahora';
-  if (diff < 3_600_000) return `hace ${Math.floor(diff / 60_000)}m`;
-  if (diff < 86_400_000) return `hace ${Math.floor(diff / 3_600_000)}h`;
-  return d.toLocaleDateString('es-MX');
+  if (diff < 60_000) return 'hace un momento';
+  if (diff < 3_600_000) {
+    const m = Math.floor(diff / 60_000);
+    return `hace ${m} min`;
+  }
+  if (diff < 86_400_000) {
+    const h = Math.floor(diff / 3_600_000);
+    return `hace ${h} h`;
+  }
+  if (diff < 7 * 86_400_000) {
+    const dd = Math.floor(diff / 86_400_000);
+    return `hace ${dd} día${dd > 1 ? 's' : ''}`;
+  }
+  return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
 }
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [merchant, setMerchant] = useState<Merchant | null>(null);
-  const [email, setEmail] = useState<string>('');
+export default function ResumenPage() {
+  const { merchant } = useDashboard();
   const [activity, setActivity] = useState<Transaction[]>([]);
+  const [programs, setPrograms] = useState<LoyaltyProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function refresh() {
-    setRefreshing(true);
+  async function load(initial = false) {
+    if (initial) setLoading(true);
+    else setRefreshing(true);
     try {
-      const result = await getActivity(20);
-      setActivity(result.items);
+      const [a, p] = await Promise.all([getActivity(20), listMyPrograms()]);
+      setActivity(a.items);
+      setPrograms(p.items);
+      setError(null);
     } catch {
-      // silent — el primer load ya falla con mensaje claro si auth está mal
+      if (initial) setError('No pudimos cargar tu actividad. Reintenta en un momento.');
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   }
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) { router.push('/login/'); return; }
-    Promise.all([getMe(), getMyMerchant(), getActivity(20)])
-      .then(([me, m, a]) => { setEmail(me.claims.email); setMerchant(m); setActivity(a.items); })
-      .catch(() => { setError('Sesión inválida. Vuelve a entrar.'); setTimeout(() => router.push('/login/'), 1500); })
-      .finally(() => setLoading(false));
-  }, [router]);
+    void load(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  function handleLogout() {
-    clearToken();
-    router.push('/');
-  }
-
-  if (loading) return <main className="flex-1 grid place-items-center"><div className="text-gray-500">Cargando…</div></main>;
-  if (error) return <main className="flex-1 grid place-items-center"><div className="bg-red-50 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div></main>;
-
-  const stampsGiven = activity.filter((t) => t.kind === 'stamp').reduce((sum, t) => sum + t.amount, 0);
+  const activeProgram = programs.find((p) => p.status === 'active') ?? programs[0] ?? null;
+  const stampsGiven = activity
+    .filter((t) => t.kind === 'stamp')
+    .reduce((sum, t) => sum + t.amount, 0);
   const redemptions = activity.filter((t) => t.kind === 'redeem').length;
-  const uniqueCustomers = new Set(activity.map((t) => t.customerPhone)).size;
+  const uniqueCustomers = new Set(
+    activity.map((t) => t.customerPhone).filter(Boolean)
+  ).size;
 
   const KPIS = [
-    { label: 'Sellos otorgados', value: String(stampsGiven), hint: 'historial reciente', icon: Plus },
-    { label: 'Canjes', value: String(redemptions), hint: 'premios entregados', icon: Gift },
-    { label: 'Clientes únicos', value: String(uniqueCustomers), hint: 'recientes activos', icon: Users },
-    { label: 'Transacciones', value: String(activity.length), hint: 'últimas 20', icon: Award },
+    {
+      label: 'Clientes activos',
+      value: String(uniqueCustomers),
+      hint: 'en actividad reciente',
+      icon: Users,
+    },
+    {
+      label: 'Sellos otorgados',
+      value: String(stampsGiven),
+      hint: 'últimas 20 operaciones',
+      icon: Plus,
+    },
+    {
+      label: 'Premios canjeados',
+      value: String(redemptions),
+      hint: 'recompensas entregadas',
+      icon: Gift,
+    },
+    {
+      label: 'Programa activo',
+      value: activeProgram ? '1' : '0',
+      hint: activeProgram ? activeProgram.name : 'crea tu programa',
+      icon: Award,
+    },
   ];
 
   return (
-    <>
-      <header className="border-b border-gray-200 bg-white">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-6">
-          <span className="font-semibold tracking-tight">Integra <span className="text-brand-600">Loyalty</span></span>
-          <span className="ml-auto text-sm text-gray-500">{email}</span>
-          <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-gray-900 inline-flex items-center gap-1">
-            <LogOut size={14} /> Salir
-          </button>
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-gray-500">Resumen</p>
+          <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-gray-900">
+            Hola, {merchant?.name ?? 'comercio'}
+          </h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Aquí ves cómo va tu programa de lealtad hoy.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link
+            href="/dashboard/share/"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:border-gray-300"
+          >
+            <Share2 size={15} /> Compartir
+          </Link>
+          <Link
+            href="/dashboard/give-stamp/"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            <ScanLine size={15} /> Dar sello
+          </Link>
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
-        <div className="mb-6 flex items-end justify-between flex-wrap gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500">Comercio</p>
-            <h1 className="text-2xl font-semibold tracking-tight">{merchant?.name}</h1>
-            <p className="text-sm text-gray-600 mt-0.5">Industria: {merchant?.industry} · plan free · slug <code className="bg-gray-100 px-1 rounded">{merchant?.slug}</code></p>
-          </div>
-          <div className="flex gap-2">
-            <a href="/dashboard/programs/" className="inline-flex items-center gap-1.5 text-sm border border-gray-200 bg-white rounded-lg px-3 py-2 hover:border-gray-400">
-              <Settings size={14} /> Programas
-            </a>
-            <a href="/dashboard/give-stamp/" className="inline-flex items-center gap-1.5 text-sm bg-brand-600 text-white rounded-lg px-3 py-2 hover:bg-brand-700">
-              <ScanLine size={14} /> Dar sellos
-            </a>
-          </div>
+      {error && (
+        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
         </div>
+      )}
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {KPIS.map((k) => {
-            const Icon = k.icon;
-            return (
-              <div key={k.label} className="bg-white border border-gray-200 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-brand-50 text-brand-600 grid place-items-center"><Icon size={18} /></div>
-                </div>
-                <div className="text-2xl font-semibold tracking-tight">{k.value}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{k.label} · {k.hint}</div>
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {KPIS.map((k) => {
+          const Icon = k.icon;
+          return (
+            <div
+              key={k.label}
+              className="rounded-xl border border-gray-200 bg-white p-4"
+            >
+              <div className="grid h-9 w-9 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                <Icon size={18} />
               </div>
-            );
-          })}
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-3 mb-6">
-          {/* Activity feed */}
-          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Actividad reciente</h3>
-              <button onClick={refresh} disabled={refreshing} className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1 disabled:opacity-50">
-                <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} /> {refreshing ? '…' : 'Refrescar'}
-              </button>
+              <div className="mt-3 text-2xl font-semibold tracking-tight text-gray-900">
+                {loading ? '—' : k.value}
+              </div>
+              <div className="mt-0.5 text-xs text-gray-500">{k.label}</div>
+              <div className="truncate text-[11px] text-gray-400">{k.hint}</div>
             </div>
-            {activity.length === 0 ? (
-              <div className="text-center py-8 text-sm text-gray-500">
-                Aún no hay actividad. Cuando empieces a dar sellos, aparecerá aquí.
-              </div>
-            ) : (
-              <ul className="divide-y divide-gray-100">
-                {activity.map((t) => (
-                  <li key={t.transactionId} className="flex items-center gap-3 py-3">
-                    <div className={`w-8 h-8 rounded-md grid place-items-center ${t.kind === 'redeem' ? 'text-amber-700 bg-amber-50' : 'text-green-700 bg-green-50'}`}>
-                      {t.kind === 'redeem' ? <Gift size={14} /> : <Plus size={14} />}
-                    </div>
-                    <div className="flex-1 text-sm">
-                      <div>
-                        {t.kind === 'stamp' ? (
-                          <>+{t.amount} sello{t.amount > 1 ? 's' : ''} a <span className="font-medium">{t.customerPhone}</span></>
-                        ) : (
-                          <>Canje de premio <span className="font-medium">({t.programName})</span> · <span className="text-gray-600">{t.customerPhone}</span></>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500">{t.stampsBefore} → {t.stampsAfter}</div>
-                    </div>
-                    <div className="text-xs text-gray-500">{formatRelative(t.createdAt)}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
+          );
+        })}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Feed de actividad */}
+        <section className="rounded-xl border border-gray-200 bg-white p-5 lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900">Actividad reciente</h2>
+            <button
+              onClick={() => load(false)}
+              disabled={refreshing || loading}
+              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 disabled:opacity-50"
+            >
+              <RefreshCw
+                size={12}
+                className={refreshing ? 'animate-spin' : ''}
+              />
+              {refreshing ? 'Actualizando…' : 'Actualizar'}
+            </button>
           </div>
 
-          {/* Quick share */}
-          <div className="bg-brand-50 border border-brand-100 rounded-xl p-5">
-            <h3 className="font-semibold mb-2">Comparte tu link</h3>
-            {merchant && (
-              <p className="text-sm text-gray-700 mb-2 break-all">
-                <a href={`/c/?s=${merchant.slug}`} className="text-brand-600 hover:underline">/c/?s={merchant.slug}</a>
+          {loading ? (
+            <div className="space-y-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-12 animate-pulse rounded-lg bg-gray-100"
+                />
+              ))}
+            </div>
+          ) : activity.length === 0 ? (
+            <div className="py-10 text-center">
+              <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-gray-100 text-gray-400">
+                <ScanLine size={20} />
+              </div>
+              <p className="text-sm font-medium text-gray-700">
+                Aún no hay movimientos
               </p>
-            )}
-            <p className="text-xs text-gray-500 mb-4">El cliente abre, da su teléfono y obtiene su tarjeta al instante.</p>
-            <a href="/dashboard/give-stamp/" className="block text-center bg-white border border-brand-200 text-brand-700 hover:bg-brand-100 rounded-lg px-4 py-2 text-sm font-medium">
-              Dar sellos a un cliente →
-            </a>
+              <p className="mt-1 text-sm text-gray-500">
+                Cuando le des un sello a un cliente, aparecerá aquí.
+              </p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {activity.map((t) => (
+                <li
+                  key={t.transactionId}
+                  className="flex items-center gap-3 py-3"
+                >
+                  <div
+                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
+                      t.kind === 'redeem'
+                        ? 'bg-amber-50 text-amber-700'
+                        : 'bg-green-50 text-green-700'
+                    }`}
+                  >
+                    {t.kind === 'redeem' ? (
+                      <Gift size={16} />
+                    ) : (
+                      <Plus size={16} />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 text-sm">
+                    {t.kind === 'stamp' ? (
+                      <p className="text-gray-800">
+                        +{t.amount} sello{t.amount > 1 ? 's' : ''} a{' '}
+                        <span className="font-medium">{t.customerPhone}</span>
+                      </p>
+                    ) : (
+                      <p className="text-gray-800">
+                        Premio canjeado por{' '}
+                        <span className="font-medium">{t.customerPhone}</span>
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500">
+                      {t.programName} · {t.stampsBefore} → {t.stampsAfter} sellos
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs text-gray-400">
+                    {formatRelative(t.createdAt)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Preview de la tarjeta del comercio */}
+        <section className="space-y-4">
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h2 className="mb-1 font-semibold text-gray-900">Tu tarjeta</h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Así la ve tu cliente en su celular.
+            </p>
+            <div className="flex justify-center">
+              <LoyaltyPass
+                variant="preview"
+                merchantName={merchant?.name ?? 'Tu comercio'}
+                brandColor={merchant?.brandColor ?? '#4f46e5'}
+                tagline={merchant?.industry}
+                programName={activeProgram?.name ?? 'Programa de lealtad'}
+                stampsRequired={activeProgram?.stampsRequired ?? 7}
+                rewardDetail={
+                  activeProgram?.rewardDetail ?? 'Tu recompensa aquí'
+                }
+                stamps={0}
+              />
+            </div>
+            <Link
+              href="/dashboard/share/"
+              className="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100"
+            >
+              Compartir con clientes
+              <ArrowUpRight size={15} />
+            </Link>
           </div>
-        </div>
-      </main>
-    </>
+        </section>
+      </div>
+    </div>
   );
 }

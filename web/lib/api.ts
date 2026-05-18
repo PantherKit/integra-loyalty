@@ -125,14 +125,15 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant> {
 
 export interface Customer { tenantId: string; customerId: string; phone: string; firstName?: string; email?: string; }
 export interface Card {
-  tenantId: string;
   cardId: string;
   programId: string;
-  customerId: string;
-  customerPhone: string;
   stamps: number;
   redemptionsCount: number;
   status: 'active' | 'completed' | 'expired' | 'cancelled';
+  // Solo presentes en endpoints autenticados del comercio (no en GET /cards/:id público).
+  tenantId?: string;
+  customerId?: string;
+  customerPhone?: string;
 }
 
 export async function signupCustomerToMerchant(slug: string, input: { phone: string; firstName?: string; email?: string; programId?: string; }): Promise<{ customer: Customer; card: Card; program: LoyaltyProgram }> {

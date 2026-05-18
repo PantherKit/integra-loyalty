@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { requireTenant } from '../middleware/tenant';
+import { requireTenant, requireRole, MERCHANT_ROLES } from '../middleware/tenant';
 import { getCard, getCardById, listCardsByPhoneInTenant, stampCard, redeemCard } from '../lib/repositories/card';
 import { getProgram } from '../lib/repositories/program';
 import { StampInput, RedeemInput } from '../lib/entities';
@@ -9,7 +9,7 @@ export const cards = new Hono();
 /**
  * GET /cards/lookup?phone=+5219991234567 — merchant busca cards de un customer por phone (auth).
  */
-cards.get('/lookup', requireTenant, async (c) => {
+cards.get('/lookup', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
   const tenantId = c.get('tenantId');
   const phone = c.req.query('phone');
   if (!phone || !/^\+\d{10,15}$/.test(phone)) {
@@ -22,21 +22,28 @@ cards.get('/lookup', requireTenant, async (c) => {
 /**
  * GET /cards/:id — público, lee una card por su id opaco (PWA wallet view).
  * Nota: SIN requireTenant. cardId es opaco (UUID), funciona como bearer.
+ * Hallazgo C1: NO devolver el item crudo (filtraba customerId, tenantId,
+ * customerPhone E.164 y claves internas cross-tenant). Se proyecta un DTO
+ * mínimo; el branding/programa lo da el endpoint público del comercio.
  */
 cards.get('/:id', async (c) => {
   const id = c.req.param('id');
   if (!id) return c.json({ error: 'missing_id' }, 400);
   const card = await getCardById(id);
   if (!card) return c.json({ error: 'card_not_found' }, 404);
-  // Enriquecer con info del program para que la PWA muestre stampsRequired y rewardDetail
-  // (acceso al program no requiere auth tampoco — datos del comercio son públicos).
-  return c.json(card);
+  return c.json({
+    cardId: card.cardId,
+    programId: card.programId,
+    stamps: card.stamps,
+    redemptionsCount: card.redemptionsCount,
+    status: card.status,
+  });
 });
 
 /**
  * POST /cards/:id/stamp — agrega sellos (auth requerida).
  */
-cards.post('/:id/stamp', requireTenant, async (c) => {
+cards.post('/:id/stamp', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
   const tenantId = c.get('tenantId');
   const userId = c.get('userId');
   const cardId = c.req.param('id');
@@ -75,7 +82,7 @@ cards.post('/:id/stamp', requireTenant, async (c) => {
 /**
  * POST /cards/:id/redeem — canjea premio (auth requerida).
  */
-cards.post('/:id/redeem', requireTenant, async (c) => {
+cards.post('/:id/redeem', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
   const tenantId = c.get('tenantId');
   const userId = c.get('userId');
   const cardId = c.req.param('id');
