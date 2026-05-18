@@ -32,14 +32,23 @@ const REWARDS = [
   '2x1 en bebidas',
   'Producto gratis',
 ];
-const INDUSTRIES = ['Cafetería', 'Restaurante', 'Estética', 'Tienda', 'Otro'];
+// value = enum que espera la API; label = lo que ve el comercio.
+const INDUSTRIES = [
+  { v: 'cafe', l: 'Cafetería' },
+  { v: 'restaurant', l: 'Restaurante' },
+  { v: 'salon', l: 'Estética' },
+  { v: 'retail', l: 'Tienda' },
+  { v: 'other', l: 'Otro' },
+] as const;
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
 
   const [name, setName] = useState('');
-  const [industry, setIndustry] = useState(INDUSTRIES[0]);
+  const [industry, setIndustry] = useState<string>('cafe');
+  const industryLabel =
+    INDUSTRIES.find((x) => x.v === industry)?.l ?? 'Negocio';
   const [color, setColor] = useState(COLORS[0]);
   const [logoText, setLogoText] = useState('');
   const [reward, setReward] = useState(REWARDS[0]);
@@ -85,7 +94,7 @@ export default function OnboardingPage() {
     <LoyaltyPass
       merchantName={name.trim() || 'Tu Negocio'}
       brandColor={color}
-      tagline={industry}
+      tagline={industryLabel}
       logoText={logoText}
       programName={`Tarjeta de ${name.trim() || 'tu negocio'}`}
       stampsRequired={stamps}
@@ -167,16 +176,16 @@ export default function OnboardingPage() {
                     <div className="flex flex-wrap gap-2">
                       {INDUSTRIES.map((g) => (
                         <button
-                          key={g}
-                          onClick={() => setIndustry(g)}
+                          key={g.v}
+                          onClick={() => setIndustry(g.v)}
                           className={cn(
                             'px-3 py-1.5 rounded-full text-sm border',
-                            industry === g
+                            industry === g.v
                               ? 'bg-brand-600 text-white border-brand-600'
                               : 'bg-white text-gray-600 border-gray-300'
                           )}
                         >
-                          {g}
+                          {g.l}
                         </button>
                       ))}
                     </div>
