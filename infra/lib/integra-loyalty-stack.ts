@@ -11,6 +11,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -125,16 +126,30 @@ export class IntegraLoyaltyStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: userPool.userPoolId,
         COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
         AWS_REGION_HINT: this.region,
+        APPLE_PASS_SECRET: 'integra-loyalty/apple-pass',
       },
       bundling: {
         format: nodeLambda.OutputFormat.ESM,
         target: 'node20',
         minify: true,
         sourceMap: true,
+        // passkit-generator/node-forge usan require() de módulos built-in;
+        // en un bundle ESM esbuild rompe con "Dynamic require not supported".
+        // Este banner reinyecta require() en el bundle ESM (fix estándar).
+        banner:
+          "import{createRequire as __cr}from'module';import{fileURLToPath as __fu}from'url';import{dirname as __dn}from'path';const require=__cr(import.meta.url);const __filename=__fu(import.meta.url);const __dirname=__dn(__filename);",
       },
     });
 
     this.table.grantReadWriteData(apiFn);
+
+    // Certificados Apple PassKit en Secrets Manager (creado fuera de CDK,
+    // referenciado por nombre). Solo lectura para la Lambda.
+    secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'ApplePassSecret',
+      'integra-loyalty/apple-pass'
+    ).grantRead(apiFn);
 
     // Grant a Lambda para hacer SignUp + AdminConfirm + InitiateAuth en Cognito
     userPool.grant(

@@ -3,6 +3,11 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://tcsbnd5m3l.execute-api.us-east-1.amazonaws.com';
 const TOKEN_KEY = 'integra_id_token';
 
+/** URL del Apple Wallet .pkpass firmado para una card. */
+export function pkpassUrl(cardId: string): string {
+  return `${API_URL}/cards/${encodeURIComponent(cardId)}/pkpass`;
+}
+
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return window.localStorage.getItem(TOKEN_KEY);

@@ -6,6 +6,7 @@ import { RefreshCw, ShieldCheck } from 'lucide-react';
 import {
   getCard,
   getPublicMerchant,
+  pkpassUrl,
   type Card,
   type PublicMerchant,
 } from '@/lib/api';
@@ -131,7 +132,7 @@ function WalletCardContent() {
       </div>
 
       <div className="mt-5">
-        <AddToWalletButtons />
+        <AddToWalletButtons appleUrl={pkpassUrl(card.cardId)} />
       </div>
 
       <p className="mt-4 flex items-start gap-1.5 text-xs text-gray-500">

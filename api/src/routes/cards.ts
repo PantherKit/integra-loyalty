@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { requireTenant, requireRole, MERCHANT_ROLES } from '../middleware/tenant';
 import { getCard, getCardById, listCardsByPhoneInTenant, stampCard, redeemCard } from '../lib/repositories/card';
 import { getProgram } from '../lib/repositories/program';
+import { getMerchantByTenant } from '../lib/repositories/merchant';
+import { buildPkpass } from '../lib/applePass';
 import { StampInput, RedeemInput } from '../lib/entities';
 
 export const cards = new Hono();
@@ -38,6 +40,37 @@ cards.get('/:id', async (c) => {
     redemptionsCount: card.redemptionsCount,
     status: card.status,
   });
+});
+
+/**
+ * GET /cards/:id/pkpass — público, genera y firma el Apple Wallet pass
+ * dinámico para esta card. SIN requireTenant (igual que GET /cards/:id):
+ * cardId es opaco y funciona como bearer.
+ */
+cards.get('/:id/pkpass', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'missing_id' }, 400);
+
+  const card = await getCardById(id);
+  if (!card) return c.json({ error: 'card_not_found' }, 404);
+
+  try {
+    const [program, merchant] = await Promise.all([
+      getProgram(card.tenantId, card.programId),
+      getMerchantByTenant(card.tenantId),
+    ]);
+    if (!program) return c.json({ error: 'program_not_found' }, 404);
+    if (!merchant) return c.json({ error: 'merchant_not_found' }, 404);
+
+    const pkpass = await buildPkpass({ card, program, merchant });
+
+    c.header('Content-Type', 'application/vnd.apple.pkpass');
+    c.header('Content-Disposition', `attachment; filename=integra-${card.cardId}.pkpass`);
+    return c.body(new Uint8Array(pkpass));
+  } catch (err) {
+    console.error('pkpass_generation_failed', { cardId: id, err });
+    return c.json({ error: 'pkpass_generation_failed' }, 500);
+  }
 });
 
 /**
