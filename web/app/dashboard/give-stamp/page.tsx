@@ -6,6 +6,7 @@ import { Search, Plus, Gift, AlertCircle, CheckCircle2, ScanLine } from 'lucide-
 import LoyaltyPass from '@/components/LoyaltyPass';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useDashboard } from '@/components/dashboard-context';
+import { DEFAULT_STAMPS_REQUIRED } from '@/lib/constants';
 import {
   lookupCardsByPhone,
   stampCard,
@@ -185,7 +186,7 @@ export default function GiveStampPage() {
         <ul className="space-y-6">
           {cards.map((card) => {
             const program = programOf(card);
-            const required = program?.stampsRequired ?? 7;
+            const required = program?.stampsRequired ?? DEFAULT_STAMPS_REQUIRED;
             const complete = card.stamps >= required;
             const isBusy = busy === card.cardId;
 

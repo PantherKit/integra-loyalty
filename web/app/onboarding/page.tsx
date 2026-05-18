@@ -70,7 +70,7 @@ export default function OnboardingPage() {
       const me = await getMyMerchant();
       const url = `${window.location.origin}/c/?s=${encodeURIComponent(me.slug)}`;
       setShareUrl(url);
-      setStep(3);
+      setStep(4);
     } catch (e: unknown) {
       const body = (e as { body?: { error?: string } })?.body;
       if (body?.error === 'email_already_registered')
@@ -108,7 +108,7 @@ export default function OnboardingPage() {
           <Steps step={step} />
         </header>
 
-        {step === 3 && shareUrl ? (
+        {step === 4 && shareUrl ? (
           <div className="max-w-md mx-auto text-center">
             <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 grid place-items-center mx-auto mb-4">
               <Check size={26} />
@@ -198,7 +198,7 @@ export default function OnboardingPage() {
 
               {step === 1 && (
                 <Card title="2 · Diseño">
-                  <Field label="Arrastra un color a la tarjeta">
+                  <Field label="Elige el color de tu tarjeta">
                     <div
                       className="flex flex-wrap gap-2"
                       onDragOver={(e) => e.preventDefault()}
@@ -230,7 +230,7 @@ export default function OnboardingPage() {
 
               {step === 2 && (
                 <Card title="3 · Premio">
-                  <Field label="Arrastra el premio a la tarjeta">
+                  <Field label="Elige el premio">
                     <div className="space-y-2">
                       {REWARDS.map((r) => (
                         <button
@@ -263,11 +263,11 @@ export default function OnboardingPage() {
                       className="w-full accent-brand-600"
                     />
                   </Field>
-                  <Nav onBack={() => setStep(1)} onNext={() => setStep(2.5)} nextLabel="Crear cuenta" />
+                  <Nav onBack={() => setStep(1)} onNext={() => setStep(3)} nextLabel="Crear cuenta" />
                 </Card>
               )}
 
-              {step === 2.5 && (
+              {step === 3 && (
                 <Card title="Casi listo · Tu cuenta">
                   <Field label="Correo">
                     <input
@@ -333,8 +333,8 @@ export default function OnboardingPage() {
 }
 
 function Steps({ step }: { step: number }) {
-  const labels = ['Negocio', 'Diseño', 'Premio', 'Listo'];
-  const idx = step >= 3 ? 3 : Math.floor(step);
+  const labels = ['Negocio', 'Diseño', 'Premio', 'Cuenta', 'Listo'];
+  const idx = Math.min(step, 4);
   return (
     <div className="flex items-center justify-center gap-2 mt-5">
       {labels.map((l, i) => (

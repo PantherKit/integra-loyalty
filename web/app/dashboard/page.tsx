@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import LoyaltyPass from '@/components/LoyaltyPass';
 import { useDashboard } from '@/components/dashboard-context';
+import { DEFAULT_STAMPS_REQUIRED } from '@/lib/constants';
 import {
   getActivity,
   listMyPrograms,
@@ -259,7 +260,7 @@ export default function ResumenPage() {
                 brandColor={merchant?.brandColor ?? '#4f46e5'}
                 tagline={merchant?.industry}
                 programName={activeProgram?.name ?? 'Programa de lealtad'}
-                stampsRequired={activeProgram?.stampsRequired ?? 7}
+                stampsRequired={activeProgram?.stampsRequired ?? DEFAULT_STAMPS_REQUIRED}
                 rewardDetail={
                   activeProgram?.rewardDetail ?? 'Tu recompensa aquí'
                 }

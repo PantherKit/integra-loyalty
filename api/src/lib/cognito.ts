@@ -109,6 +109,8 @@ export async function verifyIdToken(token: string): Promise<VerifiedJwt> {
     sub: payload.sub,
     email: (payload.email as string) ?? '',
     tenantId: (payload['custom:tenantId'] as string) ?? '',
-    role: (payload['custom:role'] as string) ?? 'owner',
+    // C2/defensa: un token SIN custom:role NO debe heredar privilegios de
+    // comercio. Los merchants siempre se crean con custom:role='owner'.
+    role: (payload['custom:role'] as string) ?? 'end_customer',
   };
 }

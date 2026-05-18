@@ -11,6 +11,7 @@ import {
 } from '@/lib/api';
 import LoyaltyPass from '@/components/LoyaltyPass';
 import AddToWalletButtons from '@/components/AddToWalletButtons';
+import { DEFAULT_STAMPS_REQUIRED } from '@/lib/constants';
 
 function WalletCardContent() {
   const sp = useSearchParams();
@@ -95,7 +96,8 @@ function WalletCardContent() {
 
   const brandColor = pm?.merchant.brandColor ?? '#4f46e5';
   const merchantName = pm?.merchant.name ?? 'Tu comercio';
-  const stampsRequired = pm?.program?.stampsRequired ?? Math.max(card.stamps, 8);
+  const stampsRequired =
+    pm?.program?.stampsRequired ?? Math.max(card.stamps, DEFAULT_STAMPS_REQUIRED);
   const rewardDetail = pm?.program?.rewardDetail ?? 'Premio de lealtad';
   const programName = pm?.program?.name ?? 'Programa de lealtad';
 
@@ -124,7 +126,6 @@ function WalletCardContent() {
           rewardDetail={rewardDetail}
           stamps={card.stamps}
           cardId={card.cardId}
-          customerPhone={card.customerPhone}
           variant="live"
         />
       </div>

@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
-import { requireTenant } from '../middleware/tenant';
+import { requireTenant, requireRole, MERCHANT_ROLES } from '../middleware/tenant';
 import { createProgram, listProgramsByTenant, getProgram } from '../lib/repositories/program';
 import { CreateProgramInput } from '../lib/entities';
 
 export const programs = new Hono();
 
-programs.post('/', requireTenant, async (c) => {
+programs.post('/', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
   const tenantId = c.get('tenantId');
   const body = await c.req.json().catch(() => null);
   const parsed = CreateProgramInput.safeParse(body);
@@ -15,13 +15,13 @@ programs.post('/', requireTenant, async (c) => {
   return c.json(program, 201);
 });
 
-programs.get('/me', requireTenant, async (c) => {
+programs.get('/me', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
   const tenantId = c.get('tenantId');
   const items = await listProgramsByTenant(tenantId);
   return c.json({ items });
 });
 
-programs.get('/:id', requireTenant, async (c) => {
+programs.get('/:id', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
   const tenantId = c.get('tenantId');
   const id = c.req.param('id');
   if (!id) return c.json({ error: 'missing_id' }, 400);

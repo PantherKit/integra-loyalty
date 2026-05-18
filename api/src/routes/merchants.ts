@@ -1,18 +1,18 @@
 import { Hono } from 'hono';
-import { requireTenant } from '../middleware/tenant';
+import { requireTenant, requireRole, MERCHANT_ROLES } from '../middleware/tenant';
 import { getMerchantByTenant, updateMerchant } from '../lib/repositories/merchant';
 import { UpdateMerchantInput } from '../lib/entities';
 
 export const merchants = new Hono();
 
-merchants.get('/me', requireTenant, async (c) => {
+merchants.get('/me', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
   const tenantId = c.get('tenantId');
   const merchant = await getMerchantByTenant(tenantId);
   if (!merchant) return c.json({ error: 'merchant_not_found' }, 404);
   return c.json(merchant);
 });
 
-merchants.patch('/me', requireTenant, async (c) => {
+merchants.patch('/me', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
   const tenantId = c.get('tenantId');
   const body = await c.req.json().catch(() => null);
   const parsed = UpdateMerchantInput.safeParse(body);
