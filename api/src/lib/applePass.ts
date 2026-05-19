@@ -278,8 +278,14 @@ export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs):
     }
   );
 
+  // El QR debe ABRIR la pantalla de dar sello con esta tarjeta cargada
+  // (mismo deep link que el QR de la web). Si codificara solo el cardId,
+  // al escanearlo con la cámara "no abre nada".
+  const webBase =
+    process.env.PUBLIC_WEB_URL ?? 'https://dewt2ht9lbl07.cloudfront.net';
   pass.setBarcodes({
-    message: card.cardId,
+    message: `${webBase}/dashboard/give-stamp/?card=${card.cardId}`,
+    altText: card.cardId.slice(0, 8).toUpperCase(),
     format: 'PKBarcodeFormatQR',
     messageEncoding: 'iso-8859-1',
   });
