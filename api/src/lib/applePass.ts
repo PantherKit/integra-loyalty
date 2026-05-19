@@ -173,6 +173,270 @@ function solidPng(size: number, r: number, g: number, b: number): Buffer {
   ]);
 }
 
+/** PNG con degradado vertical (top → bottom). Da una "banda" de marca
+ *  detrás de los campos del pase Apple — el mayor salto visual posible
+ *  dentro de la plantilla rígida de Apple Wallet. */
+function gradientPng(
+  w: number,
+  h: number,
+  top: [number, number, number],
+  bot: [number, number, number]
+): Buffer {
+  const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr.writeUInt8(8, 8);
+  ihdr.writeUInt8(6, 9); // RGBA
+  const rowLen = 1 + w * 4;
+  const raw = Buffer.alloc(rowLen * h);
+  for (let y = 0; y < h; y++) {
+    const t = h === 1 ? 0 : y / (h - 1);
+    const r = Math.round(top[0] + (bot[0] - top[0]) * t);
+    const g = Math.round(top[1] + (bot[1] - top[1]) * t);
+    const b = Math.round(top[2] + (bot[2] - top[2]) * t);
+    const off = y * rowLen;
+    raw[off] = 0;
+    for (let x = 0; x < w; x++) {
+      const p = off + 1 + x * 4;
+      raw[p] = r;
+      raw[p + 1] = g;
+      raw[p + 2] = b;
+      raw[p + 3] = 255;
+    }
+  }
+  return Buffer.concat([
+    sig,
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', deflateSync(raw)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+function clampShade(t: [number, number, number], amt: number): [number, number, number] {
+  return [
+    Math.max(0, Math.min(255, t[0] + amt)),
+    Math.max(0, Math.min(255, t[1] + amt)),
+    Math.max(0, Math.min(255, t[2] + amt)),
+  ];
+}
+
+// =============================================================================
+// Strip de sellos — PNG RGBA dibujado a mano (sin sharp/canvas en Lambda)
+// =============================================================================
+
+type RGB = [number, number, number];
+
+/** Pinta un pixel con alpha-blend sobre el buffer RGBA (sRGB simple). */
+function blendPx(buf: Buffer, W: number, x: number, y: number, c: RGB, a: number) {
+  if (a <= 0 || x < 0 || y < 0 || x >= W) return;
+  const p = (y * W + x) * 4;
+  if (p < 0 || p + 3 >= buf.length) return;
+  const ia = 1 - a;
+  buf[p] = Math.round(c[0] * a + buf[p] * ia);
+  buf[p + 1] = Math.round(c[1] * a + buf[p + 1] * ia);
+  buf[p + 2] = Math.round(c[2] * a + buf[p + 2] * ia);
+  buf[p + 3] = Math.max(buf[p + 3], Math.round(255 * a + buf[p + 3] * ia));
+}
+
+/** Círculo relleno con borde antialiased (cobertura sub-pixel por distancia). */
+function fillCircle(
+  buf: Buffer,
+  W: number,
+  H: number,
+  cx: number,
+  cy: number,
+  r: number,
+  c: RGB,
+  alpha = 1
+) {
+  const x0 = Math.max(0, Math.floor(cx - r - 1));
+  const x1 = Math.min(W - 1, Math.ceil(cx + r + 1));
+  const y0 = Math.max(0, Math.floor(cy - r - 1));
+  const y1 = Math.min(H - 1, Math.ceil(cy + r + 1));
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+      // 1px de borde suavizado: cobertura 1 dentro, 0 fuera, lineal en el borde.
+      const cov = Math.max(0, Math.min(1, r + 0.5 - d));
+      if (cov > 0) blendPx(buf, W, x, y, c, cov * alpha);
+    }
+  }
+}
+
+/** Anillo (círculo solo borde) tenue para los sellos vacíos. */
+function ring(
+  buf: Buffer,
+  W: number,
+  H: number,
+  cx: number,
+  cy: number,
+  r: number,
+  thickness: number,
+  c: RGB,
+  alpha = 1
+) {
+  const x0 = Math.max(0, Math.floor(cx - r - 1));
+  const x1 = Math.min(W - 1, Math.ceil(cx + r + 1));
+  const y0 = Math.max(0, Math.floor(cy - r - 1));
+  const y1 = Math.min(H - 1, Math.ceil(cy + r + 1));
+  const rOut = r;
+  const rIn = r - thickness;
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+      const covOut = Math.max(0, Math.min(1, rOut + 0.5 - d));
+      const covIn = Math.max(0, Math.min(1, d - (rIn - 0.5)));
+      const cov = Math.min(covOut, covIn);
+      if (cov > 0) blendPx(buf, W, x, y, c, cov * alpha);
+    }
+  }
+}
+
+/** Palomita simple (✓) centrada en (cx,cy), antialiased por trazo grueso. */
+function checkMark(
+  buf: Buffer,
+  W: number,
+  H: number,
+  cx: number,
+  cy: number,
+  r: number,
+  c: RGB
+) {
+  // Dos segmentos: bajada corta izquierda + subida larga derecha.
+  const s = r * 0.62;
+  const p1: [number, number] = [cx - s * 0.95, cy + s * 0.05];
+  const p2: [number, number] = [cx - s * 0.2, cy + s * 0.72];
+  const p3: [number, number] = [cx + s * 1.0, cy - s * 0.7];
+  const thick = Math.max(1.4, r * 0.2);
+  drawSeg(buf, W, H, p1, p2, thick, c);
+  drawSeg(buf, W, H, p2, p3, thick, c);
+}
+
+function drawSeg(
+  buf: Buffer,
+  W: number,
+  H: number,
+  a: [number, number],
+  b: [number, number],
+  thick: number,
+  c: RGB
+) {
+  const minx = Math.max(0, Math.floor(Math.min(a[0], b[0]) - thick - 1));
+  const maxx = Math.min(W - 1, Math.ceil(Math.max(a[0], b[0]) + thick + 1));
+  const miny = Math.max(0, Math.floor(Math.min(a[1], b[1]) - thick - 1));
+  const maxy = Math.min(H - 1, Math.ceil(Math.max(a[1], b[1]) + thick + 1));
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len2 = dx * dx + dy * dy || 1;
+  for (let y = miny; y <= maxy; y++) {
+    for (let x = minx; x <= maxx; x++) {
+      const px = x + 0.5;
+      const py = y + 0.5;
+      let t = ((px - a[0]) * dx + (py - a[1]) * dy) / len2;
+      t = Math.max(0, Math.min(1, t));
+      const qx = a[0] + t * dx;
+      const qy = a[1] + t * dy;
+      const dist = Math.hypot(px - qx, py - qy);
+      const cov = Math.max(0, Math.min(1, thick - dist));
+      if (cov > 0) blendPx(buf, W, x, y, c, cov);
+    }
+  }
+}
+
+function encodeRgbaPng(W: number, H: number, raw: Buffer): Buffer {
+  const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0);
+  ihdr.writeUInt32BE(H, 4);
+  ihdr.writeUInt8(8, 8);
+  ihdr.writeUInt8(6, 9); // RGBA
+  // raw es WxH RGBA contiguo; añadimos filter byte (0) por fila.
+  const rowLen = 1 + W * 4;
+  const filtered = Buffer.alloc(rowLen * H);
+  for (let y = 0; y < H; y++) {
+    filtered[y * rowLen] = 0;
+    raw.copy(filtered, y * rowLen + 1, y * W * 4, (y + 1) * W * 4);
+  }
+  return Buffer.concat([
+    sig,
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', deflateSync(filtered)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+/**
+ * Strip image del storeCard: grid de sellos dibujado a mano.
+ * Fondo crema, tokens llenos = círculo de marca + palomita blanca,
+ * tokens vacíos = anillo gris tenue. Antialias por cobertura sub-pixel.
+ */
+function stampStripPng(
+  width: number,
+  height: number,
+  total: number,
+  filled: number,
+  brand: RGB,
+  bgCream: RGB = [247, 246, 243]
+): Buffer {
+  const W = width;
+  const H = height;
+  const raw = Buffer.alloc(W * H * 4);
+  // Fondo crema opaco.
+  for (let i = 0; i < W * H; i++) {
+    raw[i * 4] = bgCream[0];
+    raw[i * 4 + 1] = bgCream[1];
+    raw[i * 4 + 2] = bgCream[2];
+    raw[i * 4 + 3] = 255;
+  }
+
+  const n = Math.max(1, total);
+  const cols = Math.min(5, n);
+  const rows = Math.ceil(n / cols);
+
+  // Token size derivado del ancho disponible (margen lateral 8%).
+  const marginX = W * 0.08;
+  const usableW = W - marginX * 2;
+  const cellW = usableW / cols;
+  // Alto: dejamos padding vertical; el grid se centra.
+  const padY = H * 0.14;
+  const usableH = H - padY * 2;
+  const cellH = usableH / rows;
+  const cell = Math.min(cellW, cellH);
+  const radius = (cell / 2) * 0.66;
+
+  // Centrar el bloque del grid.
+  const gridW = cell * cols;
+  const gridH = cell * rows;
+  const startX = (W - gridW) / 2;
+  const startY = (H - gridH) / 2;
+
+  const ringColor: RGB = [210, 208, 203];
+  const checkColor: RGB = [255, 255, 255];
+
+  for (let i = 0; i < n; i++) {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    // En la última fila (parcial) centramos los tokens restantes.
+    const inLast = row === rows - 1;
+    const lastCount = n - cols * (rows - 1);
+    const rowCols = inLast ? lastCount : cols;
+    const rowStartX = startX + ((cols - rowCols) * cell) / 2;
+    const cx = rowStartX + col * cell + cell / 2;
+    const cy = startY + row * cell + cell / 2;
+
+    if (i < filled) {
+      fillCircle(raw, W, H, cx, cy, radius, brand, 1);
+      checkMark(raw, W, H, cx, cy, radius, checkColor);
+    } else {
+      const thick = Math.max(1.5, radius * 0.13);
+      ring(raw, W, H, cx, cy, radius, thick, ringColor, 1);
+    }
+  }
+
+  return encodeRgbaPng(W, H, raw);
+}
+
 // =============================================================================
 // Color helpers
 // =============================================================================
@@ -226,9 +490,13 @@ export interface BuildPkpassArgs {
 export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs): Promise<Buffer> {
   const creds = await getCredentials();
 
-  const bgRgb = hexToRgbString(merchant.brandColor, 'rgb(30, 30, 40)');
+  // Esquema Apple-safe: fondo crema claro plano; texto/etiquetas = color de
+  // marca (fallback gris oscuro). Apple aplica color plano; crema + marca se
+  // ve premium y nunca cae en "texto blanco sobre claro".
+  const CREAM: [number, number, number] = [247, 246, 243];
+  const bgRgb = `rgb(${CREAM[0]}, ${CREAM[1]}, ${CREAM[2]})`;
   const [br, bg, bb] = hexToRgbTuple(merchant.brandColor);
-  const fgRgb = contrastOn(merchant.brandColor);
+  const fgRgb = hexToRgbString(merchant.brandColor, 'rgb(30, 30, 40)');
 
   // Logo real del comercio (PNG subido en el onboarding). Si no hay, cae a
   // un bloque sólido (Apple igual exige las imágenes).
@@ -238,6 +506,14 @@ export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs):
   const icon2x = brandLogo ?? solidSm;
   const logo = brandLogo ?? solidPng(160, br, bg, bb);
   const logo2x = brandLogo ?? solidPng(320, br, bg, bb);
+
+  // Strip = grid de sellos dibujado a mano (lo más importante del diseño).
+  // Dimensiones EXACTAS del skill para storeCard.
+  const stTotal = Math.max(1, program.stampsRequired);
+  const stFilled = Math.min(Math.max(0, card.stamps), stTotal);
+  const strip = stampStripPng(375, 144, stTotal, stFilled, [br, bg, bb], CREAM);
+  const strip2x = stampStripPng(750, 288, stTotal, stFilled, [br, bg, bb], CREAM);
+  const strip3x = stampStripPng(1125, 432, stTotal, stFilled, [br, bg, bb], CREAM);
 
   // Web Service: Apple le agrega /v1 — la URL va SIN slash final y SIN /v1.
   const webServiceURL =
@@ -271,6 +547,9 @@ export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs):
       'icon@2x.png': icon2x,
       'logo.png': logo,
       'logo@2x.png': logo2x,
+      'strip.png': strip,
+      'strip@2x.png': strip2x,
+      'strip@3x.png': strip3x,
     },
     {
       wwdr: creds.wwdr,
@@ -282,21 +561,25 @@ export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs):
 
   pass.type = 'storeCard';
 
-  const remaining = Math.max(0, program.stampsRequired - card.stamps);
   const complete = card.stamps >= program.stampsRequired;
 
   // Header: visible incluso cuando el pase está apilado en Wallet.
   pass.headerFields.push({
     key: 'count',
     label: 'SELLOS',
-    value: `${card.stamps}/${program.stampsRequired}`,
+    value: `${stFilled}/${stTotal}`,
   });
 
-  pass.primaryFields.push({
-    key: 'progress',
-    label: 'TU PROGRESO',
-    value: complete ? '¡Premio listo! 🎉' : `Te faltan ${remaining}`,
-  });
+  // Sellos NO en primaryFields (la strip los dibuja). Solo ponemos un
+  // primaryField corto cuando el premio está listo; si no, dejamos que
+  // domine la strip y NO agregamos primaryField.
+  if (complete) {
+    pass.primaryFields.push({
+      key: 'progress',
+      label: '',
+      value: '¡Premio listo! 🎉',
+    });
+  }
 
   pass.secondaryFields.push({
     key: 'reward',
@@ -306,7 +589,7 @@ export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs):
 
   pass.auxiliaryFields.push({
     key: 'merchant',
-    label: 'COMERCIO',
+    label: 'NEGOCIO',
     value: merchant.name,
   });
 

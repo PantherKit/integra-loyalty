@@ -22,6 +22,7 @@ import {
   getMyMerchant,
 } from '@/lib/api';
 import LoyaltyPass from '@/components/LoyaltyPass';
+import ApplePassPreview from '@/components/ApplePassPreview';
 import QrCode from '@/components/QrCode';
 import { cn } from '@/lib/cn';
 
@@ -207,14 +208,31 @@ export default function OnboardingPage() {
         ) : (
           <div className="grid md:grid-cols-2 gap-8 items-start">
             {/* Preview en vivo */}
-            <div className="order-1 md:order-2 md:sticky md:top-8">
-              <p className="text-xs uppercase tracking-widest text-gray-400 mb-3 text-center md:text-left">
-                Vista previa en vivo
-              </p>
-              <div className="flex justify-center">{pass}</div>
-              <p className="text-center text-xs text-gray-400 mt-3">
-                Toca <Sparkles size={11} className="inline" /> la tarjeta para ver el reverso
-              </p>
+            <div className="order-1 md:order-2 md:sticky md:top-8 space-y-8">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-gray-400 mb-3 text-center md:text-left">
+                  Así se verá en Apple Wallet
+                </p>
+                <div className="flex justify-center">
+                  <ApplePassPreview
+                    merchantName={name.trim() || 'Tu Negocio'}
+                    brandColor={color}
+                    logoUrl={logoUrl}
+                    stampsRequired={stamps}
+                    rewardDetail={reward}
+                    stamps={Math.min(3, stamps)}
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-widest text-gray-400 mb-3 text-center md:text-left">
+                  Vista previa en vivo
+                </p>
+                <div className="flex justify-center">{pass}</div>
+                <p className="text-center text-xs text-gray-400 mt-3">
+                  Toca <Sparkles size={11} className="inline" /> la tarjeta para ver el reverso
+                </p>
+              </div>
             </div>
 
             {/* Editor */}

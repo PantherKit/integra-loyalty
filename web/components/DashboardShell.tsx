@@ -57,9 +57,14 @@ export default function DashboardShell({
 
   useEffect(() => {
     let alive = true;
+    const here =
+      typeof window !== 'undefined'
+        ? window.location.pathname + window.location.search
+        : '/dashboard/';
+    const loginUrl = `/login/?next=${encodeURIComponent(here)}`;
     const token = getToken();
     if (!token) {
-      router.replace('/login/');
+      router.replace(loginUrl);
       return;
     }
     (async () => {
@@ -76,7 +81,7 @@ export default function DashboardShell({
         if (!alive) return;
         clearToken();
         setSession({ status: 'denied' });
-        setTimeout(() => router.replace('/login/'), 1200);
+        setTimeout(() => router.replace(loginUrl), 1200);
       }
     })();
     return () => {

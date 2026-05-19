@@ -17,7 +17,13 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(form);
-      router.push('/dashboard/');
+      // Regresa a donde el comercio iba (p. ej. dar sello con ?card=...)
+      let dest = '/dashboard/';
+      if (typeof window !== 'undefined') {
+        const next = new URLSearchParams(window.location.search).get('next');
+        if (next && next.startsWith('/dashboard')) dest = next;
+      }
+      router.push(dest);
     } catch (err) {
       const e = err as ApiError;
       const body = e.body as { error?: string };
