@@ -12,6 +12,7 @@ import {
 } from '@/lib/api';
 import LoyaltyPass from '@/components/LoyaltyPass';
 import AddToWalletButtons from '@/components/AddToWalletButtons';
+import QrCode from '@/components/QrCode';
 import { DEFAULT_STAMPS_REQUIRED } from '@/lib/constants';
 
 function WalletCardContent() {
@@ -131,14 +132,32 @@ function WalletCardContent() {
         />
       </div>
 
+      {/* Código para el mostrador: el negocio lo escanea y te da el sello */}
+      <div className="mt-5 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/50 p-5 text-center">
+        <p className="text-sm font-semibold text-gray-900">
+          Para que te den tu sello
+        </p>
+        <p className="text-xs text-gray-600 mt-0.5 mb-3">
+          Muéstrale este código al negocio. Lo escanea con su celular.
+        </p>
+        <div className="inline-block rounded-xl bg-white p-3 shadow-sm">
+          {typeof window !== 'undefined' && (
+            <QrCode
+              value={`${window.location.origin}/dashboard/give-stamp/?card=${card.cardId}`}
+              size={188}
+            />
+          )}
+        </div>
+      </div>
+
       <div className="mt-5">
         <AddToWalletButtons appleUrl={pkpassUrl(card.cardId)} />
       </div>
 
       <p className="mt-4 flex items-start gap-1.5 text-xs text-gray-500">
         <ShieldCheck size={13} className="mt-0.5 flex-shrink-0 text-brand-600" />
-        Muestra esta pantalla en el mostrador para acumular sellos. Se actualiza
-        sola; funciona aunque pierdas señal un momento.
+        Tu tarjeta se actualiza sola al darte un sello. Funciona aunque pierdas
+        señal un momento.
       </p>
     </div>
   );

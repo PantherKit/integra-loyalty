@@ -1,14 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Plus, Gift, AlertCircle, CheckCircle2, ScanLine } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Gift,
+  AlertCircle,
+  CheckCircle2,
+  ScanLine,
+  Camera,
+  QrCode as QrIcon,
+} from 'lucide-react';
 import LoyaltyPass from '@/components/LoyaltyPass';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useDashboard } from '@/components/dashboard-context';
 import { DEFAULT_STAMPS_REQUIRED } from '@/lib/constants';
 import {
   lookupCardsByPhone,
+  getCard,
   stampCard,
   redeemCardApi,
   listMyPrograms,
@@ -26,8 +37,10 @@ function errMsg(e: unknown, fallback: string): string {
   return body?.hint ?? body?.error ?? fallback;
 }
 
-export default function GiveStampPage() {
+function GiveStampInner() {
   const { merchant } = useDashboard();
+  const searchParams = useSearchParams();
+  const cardParam = searchParams.get('card');
   const [phone, setPhone] = useState('+52');
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -44,6 +57,22 @@ export default function GiveStampPage() {
       .then((r) => setPrograms(r.items))
       .catch(() => {});
   }, []);
+
+  // Llega por escaneo del QR del cliente: ?card=<id> → carga esa tarjeta.
+  useEffect(() => {
+    if (!cardParam) return;
+    setSearching(true);
+    setError(null);
+    getCard(cardParam)
+      .then((c) => {
+        setCards([c]);
+        setSearched(true);
+      })
+      .catch(() =>
+        setError('No encontramos esa tarjeta. Pídele al cliente que la abra de nuevo.')
+      )
+      .finally(() => setSearching(false));
+  }, [cardParam]);
 
   function programOf(card: Card): LoyaltyProgram | undefined {
     return programs.find((p) => p.programId === card.programId);
@@ -120,10 +149,53 @@ export default function GiveStampPage() {
           Dar sello o canjear
         </h1>
         <p className="mt-1 text-sm text-gray-600">
-          Busca al cliente por su teléfono para sellar su tarjeta o entregar su
-          premio.
+          Dale sello a la tarjeta del cliente o entrégale su premio.
         </p>
       </header>
+
+      {cardParam ? (
+        <div className="flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700">
+          <CheckCircle2 size={16} className="shrink-0" />
+          Tarjeta cargada desde el QR del cliente. Solo dale “Dar sello”.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <p className="text-sm font-semibold text-gray-900">
+            Cómo dar un sello
+          </p>
+          <ol className="mt-3 space-y-2.5 text-sm text-gray-700">
+            <li className="flex gap-2">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+                1
+              </span>
+              Pídele al cliente que abra su tarjeta y te muestre su{' '}
+              <span className="inline-flex items-center gap-1 font-medium">
+                <QrIcon size={13} /> código QR
+              </span>
+              .
+            </li>
+            <li className="flex gap-2">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+                2
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Camera size={14} /> Escanéalo con la cámara de tu celular
+              </span>
+              — se abre aquí con su tarjeta lista.
+            </li>
+            <li className="flex gap-2">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+                3
+              </span>
+              Toca <span className="font-medium">“Dar sello”</span>. Su tarjeta
+              se actualiza sola.
+            </li>
+          </ol>
+          <p className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-500">
+            ¿No trae el QR a la mano? Búscalo por su teléfono abajo.
+          </p>
+        </div>
+      )}
 
       <form
         onSubmit={onSearch}
@@ -282,5 +354,15 @@ export default function GiveStampPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function GiveStampPage() {
+  return (
+    <Suspense
+      fallback={<div className="text-sm text-gray-500">Cargando…</div>}
+    >
+      <GiveStampInner />
+    </Suspense>
   );
 }

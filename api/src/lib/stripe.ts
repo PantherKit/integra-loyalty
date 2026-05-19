@@ -213,13 +213,28 @@ function planFromSubscription(sub: Stripe.Subscription): BillingPlan | undefined
   return lk ? LOOKUP_TO_PLAN[lk] : undefined;
 }
 
+/**
+ * current_period_end: en API <= 2025-02-24 vive en la suscripción; desde
+ * 2025-03-31 (incl. la versión dahlia del webhook) Stripe lo movió al item.
+ * Leemos ambos para ser compatibles con cualquier versión del payload.
+ */
+function periodEndSec(sub: Stripe.Subscription): number | undefined {
+  const top = (sub as { current_period_end?: number }).current_period_end;
+  if (typeof top === 'number') return top;
+  const item = sub.items?.data?.[0] as { current_period_end?: number } | undefined;
+  return typeof item?.current_period_end === 'number'
+    ? item.current_period_end
+    : undefined;
+}
+
 async function applySubscription(tenantId: string, sub: Stripe.Subscription) {
+  const periodEnd = periodEndSec(sub);
   await updateTenantBilling(tenantId, {
     subscriptionStatus: statusFromStripe(sub.status),
     stripeSubscriptionId: sub.id,
     billingPlan: planFromSubscription(sub),
-    currentPeriodEnd: sub.current_period_end
-      ? new Date(sub.current_period_end * 1000).toISOString()
+    currentPeriodEnd: periodEnd
+      ? new Date(periodEnd * 1000).toISOString()
       : undefined,
   });
 }
