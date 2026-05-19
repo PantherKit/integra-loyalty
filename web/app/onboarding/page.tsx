@@ -11,7 +11,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Copy,
-  Sparkles,
   ImagePlus,
   LogIn,
 } from 'lucide-react';
@@ -22,7 +21,6 @@ import {
   getMyMerchant,
   type StampStyle,
 } from '@/lib/api';
-import LoyaltyPass from '@/components/LoyaltyPass';
 import ApplePassPreview from '@/components/ApplePassPreview';
 import QrCode from '@/components/QrCode';
 import { cn } from '@/lib/cn';
@@ -95,8 +93,6 @@ export default function OnboardingPage() {
 
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState<string>('cafe');
-  const industryLabel =
-    INDUSTRIES.find((x) => x.v === industry)?.l ?? 'Negocio';
   const [color, setColor] = useState(COLORS[0]);
   const [logoText, setLogoText] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
@@ -145,20 +141,6 @@ export default function OnboardingPage() {
     }
   }
 
-  const pass = (
-    <LoyaltyPass
-      merchantName={name.trim() || 'Tu Negocio'}
-      brandColor={color}
-      tagline={industryLabel}
-      logoText={logoText}
-      logoUrl={logoUrl}
-      programName={`Tarjeta de ${name.trim() || 'tu negocio'}`}
-      stampsRequired={stamps}
-      rewardDetail={reward}
-      stamps={Math.min(3, stamps)}
-      variant="preview"
-    />
-  );
 
   return (
     <main className="flex-1 px-4 py-8 md:py-12">
@@ -220,32 +202,21 @@ export default function OnboardingPage() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-8 items-start">
-            {/* Preview en vivo */}
-            <div className="order-1 md:order-2 md:sticky md:top-8 space-y-8">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-gray-400 mb-3 text-center md:text-left">
-                  Así se verá en Apple Wallet
-                </p>
-                <div className="flex justify-center">
-                  <ApplePassPreview
-                    merchantName={name.trim() || 'Tu Negocio'}
-                    bgColor={color}
-                    logoUrl={logoUrl}
-                    stampStyle={stampStyle}
-                    stampsRequired={stamps}
-                    rewardDetail={reward}
-                    stamps={Math.min(3, stamps)}
-                  />
-                </div>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-widest text-gray-400 mb-3 text-center md:text-left">
-                  Vista previa en vivo
-                </p>
-                <div className="flex justify-center">{pass}</div>
-                <p className="text-center text-xs text-gray-400 mt-3">
-                  Toca <Sparkles size={11} className="inline" /> la tarjeta para ver el reverso
-                </p>
+            {/* Preview en vivo — exactamente como se verá en Apple Wallet */}
+            <div className="order-1 md:order-2 md:sticky md:top-8">
+              <p className="text-xs uppercase tracking-widest text-gray-400 mb-3 text-center md:text-left">
+                Así se verá en Apple Wallet
+              </p>
+              <div className="flex justify-center">
+                <ApplePassPreview
+                  merchantName={name.trim() || 'Tu Negocio'}
+                  bgColor={color}
+                  logoUrl={logoUrl}
+                  stampStyle={stampStyle}
+                  stampsRequired={stamps}
+                  rewardDetail={reward}
+                  stamps={Math.min(3, stamps)}
+                />
               </div>
             </div>
 
