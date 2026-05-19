@@ -25,6 +25,7 @@ publicRoutes.get('/m/:slug', async (c) => {
       industry: merchant.industry,
       brandColor: merchant.brandColor,
       logoUrl: merchant.logoUrl,
+      stampStyle: merchant.stampStyle,
     },
     program: activeProgram
       ? {

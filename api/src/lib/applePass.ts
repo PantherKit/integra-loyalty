@@ -1,10 +1,10 @@
 import { PKPass } from 'passkit-generator';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
-import { deflateSync } from 'node:zlib';
+import { deflateSync, inflateSync } from 'node:zlib';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createHmac } from 'node:crypto';
-import type { Card, LoyaltyProgram, Merchant } from './entities';
+import type { Card, LoyaltyProgram, Merchant, StampStyle } from './entities';
 
 // =============================================================================
 // Cert loading (Secrets Manager + local fallback para verificación local)
@@ -344,6 +344,159 @@ function drawSeg(
   }
 }
 
+/** Rellena un polígono convexo/cóncavo simple por point-in-polygon con
+ *  antialias por supersampling 2x2 (suficiente para iconos pequeños). */
+function fillPolygon(
+  buf: Buffer,
+  W: number,
+  H: number,
+  pts: [number, number][],
+  c: RGB
+) {
+  let minx = Infinity;
+  let maxx = -Infinity;
+  let miny = Infinity;
+  let maxy = -Infinity;
+  for (const [px, py] of pts) {
+    if (px < minx) minx = px;
+    if (px > maxx) maxx = px;
+    if (py < miny) miny = py;
+    if (py > maxy) maxy = py;
+  }
+  const x0 = Math.max(0, Math.floor(minx));
+  const x1 = Math.min(W - 1, Math.ceil(maxx));
+  const y0 = Math.max(0, Math.floor(miny));
+  const y1 = Math.min(H - 1, Math.ceil(maxy));
+  const inside = (px: number, py: number): boolean => {
+    let win = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const xi = pts[i][0];
+      const yi = pts[i][1];
+      const xj = pts[j][0];
+      const yj = pts[j][1];
+      if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
+        win = !win;
+      }
+    }
+    return win;
+  };
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      let hit = 0;
+      for (let sy = 0; sy < 2; sy++) {
+        for (let sx = 0; sx < 2; sx++) {
+          if (inside(x + 0.25 + sx * 0.5, y + 0.25 + sy * 0.5)) hit++;
+        }
+      }
+      if (hit > 0) blendPx(buf, W, x, y, c, hit / 4);
+    }
+  }
+}
+
+/** Estrella de 5 puntas centrada en (cx,cy) con radio externo r. */
+function drawStar(buf: Buffer, W: number, H: number, cx: number, cy: number, r: number, c: RGB) {
+  const pts: [number, number][] = [];
+  const rIn = r * 0.42;
+  for (let i = 0; i < 10; i++) {
+    const ang = -Math.PI / 2 + (i * Math.PI) / 5;
+    const rad = i % 2 === 0 ? r : rIn;
+    pts.push([cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad]);
+  }
+  fillPolygon(buf, W, H, pts, c);
+}
+
+/** Corazón centrado en (cx,cy) que cabe en un círculo de radio r. */
+function drawHeart(buf: Buffer, W: number, H: number, cx: number, cy: number, r: number, c: RGB) {
+  const s = r * 1.05;
+  const x0 = Math.max(0, Math.floor(cx - s - 1));
+  const x1 = Math.min(W - 1, Math.ceil(cx + s + 1));
+  const y0 = Math.max(0, Math.floor(cy - s - 1));
+  const y1 = Math.min(H - 1, Math.ceil(cy + s + 1));
+  // Curva implícita de corazón; muestreo 2x2.
+  const hit = (px: number, py: number): boolean => {
+    const u = (px - cx) / s;
+    const v = -(py - cy) / s + 0.35;
+    const a = u * u + v * v - 1;
+    return a * a * a - u * u * v * v * v <= 0;
+  };
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      let n = 0;
+      for (let sy = 0; sy < 2; sy++)
+        for (let sx = 0; sx < 2; sx++)
+          if (hit(x + 0.25 + sx * 0.5, y + 0.25 + sy * 0.5)) n++;
+      if (n > 0) blendPx(buf, W, x, y, c, n / 4);
+    }
+  }
+}
+
+/** Taza de café con asa, centrada en (cx,cy), cabe en círculo radio r. */
+function drawCup(buf: Buffer, W: number, H: number, cx: number, cy: number, r: number, c: RGB) {
+  const bw = r * 1.05; // ancho del cuerpo
+  const bh = r * 1.2; // alto del cuerpo
+  const top = cy - bh / 2;
+  const bot = cy + bh / 2;
+  // Cuerpo (trapecio que se afina abajo).
+  fillPolygon(buf, W, H, [
+    [cx - bw / 2, top],
+    [cx + bw / 2, top],
+    [cx + bw * 0.36, bot],
+    [cx - bw * 0.36, bot],
+  ], c);
+  // Asa: anillo a la derecha; le restamos un disco de fondo para que sea hueca.
+  const hx = cx + bw / 2;
+  const hy = cy - bh * 0.05;
+  const hr = r * 0.42;
+  ring(buf, W, H, hx, hy, hr, Math.max(2, r * 0.16), c, 1);
+  // Vapor: dos trazos cortos arriba.
+  drawSeg(buf, W, H, [cx - bw * 0.18, top - r * 0.18], [cx - bw * 0.05, top - r * 0.5], Math.max(1.4, r * 0.12), c);
+  drawSeg(buf, W, H, [cx + bw * 0.12, top - r * 0.18], [cx + bw * 0.25, top - r * 0.5], Math.max(1.4, r * 0.12), c);
+}
+
+/**
+ * Dibuja el logo decodificado recortado en círculo (cx,cy,r) con borde
+ * antialiased. `src` = RGBA WxH del decoder. Hace "cover" (rellena el círculo).
+ */
+function drawLogoCircle(
+  buf: Buffer,
+  W: number,
+  H: number,
+  cx: number,
+  cy: number,
+  r: number,
+  src: DecodedPng
+) {
+  const x0 = Math.max(0, Math.floor(cx - r - 1));
+  const x1 = Math.min(W - 1, Math.ceil(cx + r + 1));
+  const y0 = Math.max(0, Math.floor(cy - r - 1));
+  const y1 = Math.min(H - 1, Math.ceil(cy + r + 1));
+  // cover: escala para que el lado menor del logo cubra el diámetro.
+  const d = r * 2;
+  const scale = Math.max(d / src.w, d / src.h);
+  const drawW = src.w * scale;
+  const drawH = src.h * scale;
+  const ox = cx - drawW / 2;
+  const oy = cy - drawH / 2;
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const dist = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+      const cov = Math.max(0, Math.min(1, r + 0.5 - dist));
+      if (cov <= 0) continue;
+      let sx = Math.floor((x + 0.5 - ox) / scale);
+      let sy = Math.floor((y + 0.5 - oy) / scale);
+      if (sx < 0) sx = 0;
+      if (sy < 0) sy = 0;
+      if (sx >= src.w) sx = src.w - 1;
+      if (sy >= src.h) sy = src.h - 1;
+      const si = (sy * src.w + sx) * 4;
+      const a = (src.rgba[si + 3] / 255) * cov;
+      if (a > 0) {
+        blendPx(buf, W, x, y, [src.rgba[si], src.rgba[si + 1], src.rgba[si + 2]], a);
+      }
+    }
+  }
+}
+
 function encodeRgbaPng(W: number, H: number, raw: Buffer): Buffer {
   const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   const ihdr = Buffer.alloc(13);
@@ -366,29 +519,45 @@ function encodeRgbaPng(W: number, H: number, raw: Buffer): Buffer {
   ]);
 }
 
+interface StripOpts {
+  style: StampStyle;
+  /** Logo decodificado (solo si style==='logo' y decodificó OK). */
+  logo?: DecodedPng | null;
+}
+
 /**
  * Strip image del storeCard: grid de sellos dibujado a mano.
- * Fondo crema, tokens llenos = círculo de marca + palomita blanca,
- * tokens vacíos = anillo gris tenue. Antialias por cobertura sub-pixel.
+ * Fondo = color del pase (el que el comercio eligió, NO crema fija).
+ * Tokens llenos = forma elegida en color de contraste sobre el fondo;
+ * tokens vacíos = anillo tenue. Antialias por cobertura sub-pixel.
  */
 function stampStripPng(
   width: number,
   height: number,
   total: number,
   filled: number,
-  brand: RGB,
-  bgCream: RGB = [247, 246, 243]
+  bgColor: RGB,
+  opts: StripOpts
 ): Buffer {
   const W = width;
   const H = height;
   const raw = Buffer.alloc(W * H * 4);
-  // Fondo crema opaco.
+  // Fondo = MISMO color del pase (se funde con el resto del pase).
   for (let i = 0; i < W * H; i++) {
-    raw[i * 4] = bgCream[0];
-    raw[i * 4 + 1] = bgCream[1];
-    raw[i * 4 + 2] = bgCream[2];
+    raw[i * 4] = bgColor[0];
+    raw[i * 4 + 1] = bgColor[1];
+    raw[i * 4 + 2] = bgColor[2];
     raw[i * 4 + 3] = 255;
   }
+  // Estilo efectivo: si pidió 'logo' pero no decodificó → 'disc'.
+  let style: StampStyle = opts.style;
+  const logo = style === 'logo' ? opts.logo ?? null : null;
+  if (style === 'logo' && !logo) style = 'disc';
+  // Color de relieve = contraste sobre el fondo (texto/forma legible).
+  const lum = (0.299 * bgColor[0] + 0.587 * bgColor[1] + 0.114 * bgColor[2]) / 255;
+  const inkLight: RGB = [255, 255, 255];
+  const inkDark: RGB = [17, 24, 39];
+  const ink: RGB = lum > 0.62 ? inkDark : inkLight;
 
   const n = Math.max(1, total);
   const cols = Math.min(5, n);
@@ -411,8 +580,8 @@ function stampStripPng(
   const startX = (W - gridW) / 2;
   const startY = (H - gridH) / 2;
 
-  const ringColor: RGB = [210, 208, 203];
-  const checkColor: RGB = [255, 255, 255];
+  // Anillo tenue para vacíos: tinta de contraste con baja opacidad.
+  const ringAlpha = 0.32;
 
   for (let i = 0; i < n; i++) {
     const row = Math.floor(i / cols);
@@ -426,11 +595,33 @@ function stampStripPng(
     const cy = startY + row * cell + cell / 2;
 
     if (i < filled) {
-      fillCircle(raw, W, H, cx, cy, radius, brand, 1);
-      checkMark(raw, W, H, cx, cy, radius, checkColor);
+      switch (style) {
+        case 'logo':
+          // logo no-null garantizado (si era null cayó a 'disc' arriba).
+          drawLogoCircle(raw, W, H, cx, cy, radius, logo as DecodedPng);
+          break;
+        case 'star':
+          drawStar(raw, W, H, cx, cy, radius, ink);
+          break;
+        case 'heart':
+          drawHeart(raw, W, H, cx, cy, radius * 0.92, ink);
+          break;
+        case 'cup':
+          drawCup(raw, W, H, cx, cy, radius * 0.9, ink);
+          break;
+        case 'check':
+          fillCircle(raw, W, H, cx, cy, radius, ink, 1);
+          checkMark(raw, W, H, cx, cy, radius, bgColor);
+          break;
+        case 'disc':
+        default:
+          fillCircle(raw, W, H, cx, cy, radius, ink, 1);
+          checkMark(raw, W, H, cx, cy, radius, bgColor);
+          break;
+      }
     } else {
       const thick = Math.max(1.5, radius * 0.13);
-      ring(raw, W, H, cx, cy, radius, thick, ringColor, 1);
+      ring(raw, W, H, cx, cy, radius, thick, ink, ringAlpha);
     }
   }
 
@@ -458,6 +649,18 @@ function hexToRgbTuple(hex: string | undefined): [number, number, number] {
   ];
 }
 
+/** "rgb(r, g, b)" → [r,g,b]. Fallback crema si no parsea. */
+function parseRgbString(s: string): [number, number, number] {
+  const m = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(s);
+  if (!m) return [247, 246, 243];
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+function rgbTupleToHex(t: [number, number, number]): string {
+  const h = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0');
+  return `#${h(t[0])}${h(t[1])}${h(t[2])}`;
+}
+
 /** Color de texto legible (blanco/negro) sobre el color de marca. */
 function contrastOn(hex: string | undefined): string {
   const [r, g, b] = hexToRgbTuple(hex);
@@ -478,6 +681,133 @@ function pngFromDataUrl(dataUrl: string | undefined): Buffer | null {
 }
 
 // =============================================================================
+// Mini PNG decoder — SOLO para el logo que produce el <canvas> del onboarding
+// =============================================================================
+//
+// LÍMITES (a propósito, no es un decoder general):
+//   - Solo bit depth 8.
+//   - Solo color type 2 (RGB) y 6 (RGBA). NO indexado (3), grayscale (0/4).
+//   - Solo interlace 0 (sin Adam7).
+//   - Filtros de scanline 0..4 (None/Sub/Up/Average/Paeth).
+//   - Ignora chunks ancillary (gAMA/pHYs/tEXt/etc.); concatena todos los IDAT.
+// El canvas.toDataURL('image/png') del onboarding cae siempre en este caso
+// (RGBA 8-bit, sin interlace). Cualquier otra cosa → return null → fallback.
+
+interface DecodedPng {
+  w: number;
+  h: number;
+  rgba: Buffer; // w*h*4
+}
+
+function paeth(a: number, b: number, c: number): number {
+  const p = a + b - c;
+  const pa = Math.abs(p - a);
+  const pb = Math.abs(p - b);
+  const pc = Math.abs(p - c);
+  if (pa <= pb && pa <= pc) return a;
+  if (pb <= pc) return b;
+  return c;
+}
+
+/** Decodifica un PNG mínimo (ver LÍMITES arriba). null si no aplica/falla. */
+function decodePngMinimal(png: Buffer): DecodedPng | null {
+  try {
+    const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    if (png.length < 8) return null;
+    for (let i = 0; i < 8; i++) if (png[i] !== sig[i]) return null;
+
+    let off = 8;
+    let w = 0;
+    let h = 0;
+    let bitDepth = 0;
+    let colorType = -1;
+    let interlace = 0;
+    const idatParts: Buffer[] = [];
+
+    while (off + 8 <= png.length) {
+      const len = png.readUInt32BE(off);
+      const type = png.toString('ascii', off + 4, off + 8);
+      const dataStart = off + 8;
+      const dataEnd = dataStart + len;
+      if (dataEnd + 4 > png.length) return null;
+
+      if (type === 'IHDR') {
+        w = png.readUInt32BE(dataStart);
+        h = png.readUInt32BE(dataStart + 4);
+        bitDepth = png[dataStart + 8];
+        colorType = png[dataStart + 9];
+        interlace = png[dataStart + 12];
+      } else if (type === 'IDAT') {
+        idatParts.push(png.subarray(dataStart, dataEnd));
+      } else if (type === 'IEND') {
+        break;
+      }
+      off = dataEnd + 4; // skip CRC
+    }
+
+    if (bitDepth !== 8 || interlace !== 0) return null;
+    if (colorType !== 2 && colorType !== 6) return null;
+    if (w <= 0 || h <= 0 || w > 4096 || h > 4096) return null;
+    if (idatParts.length === 0) return null;
+
+    const channels = colorType === 6 ? 4 : 3;
+    const stride = w * channels;
+    const inflated = inflateSync(Buffer.concat(idatParts));
+    if (inflated.length < (stride + 1) * h) return null;
+
+    const out = Buffer.alloc(w * h * 4);
+    const prev = Buffer.alloc(stride); // scanline anterior des-filtrada
+    const cur = Buffer.alloc(stride);
+
+    let p = 0;
+    for (let y = 0; y < h; y++) {
+      const filter = inflated[p++];
+      for (let x = 0; x < stride; x++) {
+        const raw = inflated[p++];
+        const a = x >= channels ? cur[x - channels] : 0;
+        const b = prev[x];
+        const c = x >= channels ? prev[x - channels] : 0;
+        let val: number;
+        switch (filter) {
+          case 0:
+            val = raw;
+            break;
+          case 1:
+            val = raw + a;
+            break;
+          case 2:
+            val = raw + b;
+            break;
+          case 3:
+            val = raw + ((a + b) >> 1);
+            break;
+          case 4:
+            val = raw + paeth(a, b, c);
+            break;
+          default:
+            return null;
+        }
+        cur[x] = val & 0xff;
+      }
+      // Empaqueta a RGBA.
+      for (let x = 0; x < w; x++) {
+        const si = x * channels;
+        const di = (y * w + x) * 4;
+        out[di] = cur[si];
+        out[di + 1] = cur[si + 1];
+        out[di + 2] = cur[si + 2];
+        out[di + 3] = channels === 4 ? cur[si + 3] : 255;
+      }
+      cur.copy(prev);
+    }
+
+    return { w, h, rgba: out };
+  } catch {
+    return null;
+  }
+}
+
+// =============================================================================
 // buildPkpass
 // =============================================================================
 
@@ -490,13 +820,14 @@ export interface BuildPkpassArgs {
 export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs): Promise<Buffer> {
   const creds = await getCredentials();
 
-  // Esquema Apple-safe: fondo crema claro plano; texto/etiquetas = color de
-  // marca (fallback gris oscuro). Apple aplica color plano; crema + marca se
-  // ve premium y nunca cae en "texto blanco sobre claro".
-  const CREAM: [number, number, number] = [247, 246, 243];
-  const bgRgb = `rgb(${CREAM[0]}, ${CREAM[1]}, ${CREAM[2]})`;
-  const [br, bg, bb] = hexToRgbTuple(merchant.brandColor);
-  const fgRgb = hexToRgbString(merchant.brandColor, 'rgb(30, 30, 40)');
+  // Colores: el COMERCIO elige el fondo. Crema SOLO como fallback si no hay
+  // brandColor válido. Apple lo aplica plano (límite de Apple, no nuestro).
+  // foreground/label = contraste calculado sobre ese fondo.
+  const CREAM_FALLBACK = 'rgb(247, 246, 243)';
+  const bgRgb = hexToRgbString(merchant.brandColor, CREAM_FALLBACK);
+  const bgTuple: [number, number, number] = parseRgbString(bgRgb);
+  const [br, bg, bb] = bgTuple;
+  const fgRgb = contrastOn(merchant.brandColor ?? rgbTupleToHex(bgTuple));
 
   // Logo real del comercio (PNG subido en el onboarding). Si no hay, cae a
   // un bloque sólido (Apple igual exige las imágenes).
@@ -507,13 +838,22 @@ export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs):
   const logo = brandLogo ?? solidPng(160, br, bg, bb);
   const logo2x = brandLogo ?? solidPng(320, br, bg, bb);
 
+  // Estilo del sello: el que eligió el comercio. Default efectivo:
+  // 'logo' si hay logo subido, si no 'disc'. El decode del logo se hace
+  // una vez y se reusa en los 3 tamaños (fallback a 'disc' si falla).
+  const effectiveStyle: StampStyle =
+    merchant.stampStyle ?? (merchant.logoUrl ? 'logo' : 'disc');
+  const decodedLogo =
+    effectiveStyle === 'logo' && brandLogo ? decodePngMinimal(brandLogo) : null;
+  const stripOpts: StripOpts = { style: effectiveStyle, logo: decodedLogo };
+
   // Strip = grid de sellos dibujado a mano (lo más importante del diseño).
-  // Dimensiones EXACTAS del skill para storeCard.
+  // Dimensiones EXACTAS del skill para storeCard. Fondo = color del pase.
   const stTotal = Math.max(1, program.stampsRequired);
   const stFilled = Math.min(Math.max(0, card.stamps), stTotal);
-  const strip = stampStripPng(375, 144, stTotal, stFilled, [br, bg, bb], CREAM);
-  const strip2x = stampStripPng(750, 288, stTotal, stFilled, [br, bg, bb], CREAM);
-  const strip3x = stampStripPng(1125, 432, stTotal, stFilled, [br, bg, bb], CREAM);
+  const strip = stampStripPng(375, 144, stTotal, stFilled, bgTuple, stripOpts);
+  const strip2x = stampStripPng(750, 288, stTotal, stFilled, bgTuple, stripOpts);
+  const strip3x = stampStripPng(1125, 432, stTotal, stFilled, bgTuple, stripOpts);
 
   // Web Service: Apple le agrega /v1 — la URL va SIN slash final y SIN /v1.
   const webServiceURL =

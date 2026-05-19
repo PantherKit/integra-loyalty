@@ -20,6 +20,7 @@ import {
   updateMyMerchant,
   createProgram,
   getMyMerchant,
+  type StampStyle,
 } from '@/lib/api';
 import LoyaltyPass from '@/components/LoyaltyPass';
 import ApplePassPreview from '@/components/ApplePassPreview';
@@ -29,6 +30,15 @@ import { cn } from '@/lib/cn';
 const COLORS = [
   '#4f46e5', '#0ea5e9', '#059669', '#d97706',
   '#dc2626', '#db2777', '#7c3aed', '#111827',
+];
+// Estilos de sello disponibles. 'logo' usa el logo recortado en círculo.
+const STAMP_STYLES: { v: StampStyle; l: string; glyph: string }[] = [
+  { v: 'logo', l: 'Logo', glyph: '🏷️' },
+  { v: 'disc', l: 'Círculo', glyph: '●' },
+  { v: 'star', l: 'Estrella', glyph: '★' },
+  { v: 'heart', l: 'Corazón', glyph: '♥' },
+  { v: 'cup', l: 'Café', glyph: '☕' },
+  { v: 'check', l: 'Palomita', glyph: '✓' },
 ];
 const REWARDS = [
   'Un café gratis',
@@ -90,6 +100,9 @@ export default function OnboardingPage() {
   const [color, setColor] = useState(COLORS[0]);
   const [logoText, setLogoText] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
+  // null = sin elección explícita → default dinámico ('logo' si hay logo, si no 'disc').
+  const [stampPick, setStampPick] = useState<StampStyle | null>(null);
+  const stampStyle: StampStyle = stampPick ?? (logoUrl ? 'logo' : 'disc');
   const [reward, setReward] = useState(REWARDS[0]);
   const [stamps, setStamps] = useState(8);
 
@@ -109,7 +122,7 @@ export default function OnboardingPage() {
     setBusy(true);
     try {
       await signup({ email, password, merchantName: name.trim(), industry });
-      await updateMyMerchant({ brandColor: color, logoUrl });
+      await updateMyMerchant({ brandColor: color, logoUrl, stampStyle });
       await createProgram({
         name: `Tarjeta de ${name.trim()}`,
         description: `Acumula sellos en ${name.trim()}`,
@@ -216,8 +229,9 @@ export default function OnboardingPage() {
                 <div className="flex justify-center">
                   <ApplePassPreview
                     merchantName={name.trim() || 'Tu Negocio'}
-                    brandColor={color}
+                    bgColor={color}
                     logoUrl={logoUrl}
+                    stampStyle={stampStyle}
                     stampsRequired={stamps}
                     rewardDetail={reward}
                     stamps={Math.min(3, stamps)}
@@ -332,7 +346,7 @@ export default function OnboardingPage() {
 
               {step === 1 && (
                 <Card title="2 · Diseño">
-                  <Field label="Elige el color de tu tarjeta">
+                  <Field label="Color del pase (fondo de la tarjeta)">
                     <div
                       className="flex flex-wrap gap-2"
                       onDragOver={(e) => e.preventDefault()}
@@ -357,6 +371,54 @@ export default function OnboardingPage() {
                         <Palette size={13} /> o tócalo
                       </span>
                     </div>
+                    <p className="mt-2 text-xs text-gray-400">
+                      Este es el color de fondo del pase en Apple Wallet. El texto
+                      se ajusta solo para que se lea bien.
+                    </p>
+                  </Field>
+                  <Field label="Tu sello">
+                    <div className="flex flex-wrap gap-2">
+                      {STAMP_STYLES.map((s) => {
+                        const isLogo = s.v === 'logo';
+                        const disabled = isLogo && !logoUrl;
+                        const active = stampStyle === s.v;
+                        return (
+                          <button
+                            key={s.v}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => setStampPick(s.v)}
+                            title={
+                              disabled ? 'Sube un logo para usar este estilo' : s.l
+                            }
+                            className={cn(
+                              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border',
+                              disabled && 'opacity-40 cursor-not-allowed',
+                              active
+                                ? 'bg-brand-600 text-white border-brand-600'
+                                : 'bg-white text-gray-600 border-gray-300'
+                            )}
+                          >
+                            {isLogo && logoUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={logoUrl}
+                                alt=""
+                                className="h-4 w-4 rounded-full object-cover"
+                                aria-hidden
+                              />
+                            ) : (
+                              <span aria-hidden>{s.glyph}</span>
+                            )}
+                            {s.l}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400">
+                      Es el ícono que se llena al sellar. Con &quot;Logo&quot;
+                      usamos tu logo recortado en círculo, automático.
+                    </p>
                   </Field>
                   <Nav onBack={() => setStep(0)} onNext={() => setStep(2)} />
                 </Card>

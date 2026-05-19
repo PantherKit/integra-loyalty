@@ -72,6 +72,9 @@ export async function getMe(): Promise<{ claims: { sub: string; email: string; t
   return request('/auth/me');
 }
 
+// Estilo del sello del grid de la strip (mismos valores que el backend).
+export type StampStyle = 'logo' | 'disc' | 'star' | 'heart' | 'cup' | 'check';
+
 // Merchants
 export interface Merchant {
   tenantId: string;
@@ -80,6 +83,7 @@ export interface Merchant {
   industry: string;
   brandColor?: string;
   logoUrl?: string;
+  stampStyle?: StampStyle;
   phone?: string;
 }
 
@@ -121,7 +125,7 @@ export async function listMyPrograms(): Promise<{ items: LoyaltyProgram[] }> {
 
 // Public (sin auth) — landing del merchant + customer signup + card lookup
 export interface PublicMerchant {
-  merchant: { slug: string; name: string; industry: string; brandColor?: string; logoUrl?: string };
+  merchant: { slug: string; name: string; industry: string; brandColor?: string; logoUrl?: string; stampStyle?: StampStyle };
   program: { programId: string; name: string; description?: string; stampsRequired: number; rewardDetail: string } | null;
 }
 

@@ -57,16 +57,34 @@ de texto para premio/comercio/instrucción corta.
 - Aspecto del strip ≈ 3:1 (más bien 2.6:1 para storeCard). Diseñar al @2x
   (750×288) y escalar.
 
-## Colores: usar lo que Apple respeta (WYSIWYG)
+## Colores: el COMERCIO elige (NO forzar crema)
 
-- Apple aplica `backgroundColor` plano (sin gradiente). Si quieres "cool", usa
-  un **fondo claro/crema** (`rgb(247,247,245)`) con `foregroundColor`/
-  `labelColor` = color de marca. Se ve premium y es 100% Apple-compatible (es
-  justo lo que hace el ejemplo bueno: fondo crema, texto azul de marca).
-- Calcular contraste: si el fondo es claro → texto oscuro/marca; si es oscuro →
-  texto claro. Nunca texto blanco sobre fondo claro.
-- **La preview en la web DEBE usar este mismo esquema** (mismo fondo, mismo
-  strip de sellos) para que sea WYSIWYG — el comercio ve lo que recibirá.
+- `backgroundColor` = **el color que el comercio elija** (Apple lo aplica plano,
+  sin gradiente — eso sí es límite de Apple). NUNCA hardcodear crema; crema solo
+  como fallback si no hay color.
+- `foregroundColor`/`labelColor` = **calculados por contraste** sobre el fondo
+  elegido (fondo claro → texto oscuro; fondo oscuro → texto claro). Nunca texto
+  ilegible.
+- El fondo de la `strip` (donde van los sellos) debe ser el MISMO color del
+  pase para que se funda, no un recuadro distinto.
+- **La preview web DEBE usar el mismo color y el mismo grid** → WYSIWYG real:
+  el comercio ve exactamente lo que recibirá.
+
+## "Crea tu sello" (plug & play)
+
+El token de sello del grid es configurable por el comercio (campo `stampStyle`):
+
+- **Presets dibujables sin decodificar imágenes** (con primitivas de raster):
+  `disc` (círculo), `star`, `heart`, `cup` (café), `check`. Llenos = forma en
+  color de contraste sobre el color de marca; vacíos = anillo tenue.
+- **`logo`**: el logo del comercio recortado en círculo, automático. Requiere
+  decodificar el PNG del logo. Como el logo lo produce `<canvas>` del onboarding
+  es PNG predecible (8-bit, color type 2 RGB ó 6 RGBA, sin interlace, filtros
+  0–4). Implementar un decoder mínimo para ESE caso (inflate + unfilter por
+  scanline) y **fallback a `disc` si el decode falla** — nunca romper el pase.
+- Default: `logo` si hay logo subido; si no, `disc`.
+- El onboarding tiene un paso "Tu sello" que muestra los estilos y los aplica
+  en vivo en la ApplePassPreview (WYSIWYG).
 
 ## Strip de sellos: cómo dibujarlo sin libs nativas
 

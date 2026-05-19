@@ -43,6 +43,11 @@ export type Tenant = z.infer<typeof TenantSchema>;
 export const Industry = z.enum(['cafe', 'restaurant', 'salon', 'retail', 'other']);
 export type Industry = z.infer<typeof Industry>;
 
+// Estilo del sello del grid de la strip. 'logo' = logo del comercio recortado
+// en círculo; el resto son formas dibujadas con primitivas de raster.
+export const StampStyleSchema = z.enum(['logo', 'disc', 'star', 'heart', 'cup', 'check']);
+export type StampStyle = z.infer<typeof StampStyleSchema>;
+
 export const AddressSchema = z.object({
   street: z.string().optional(),
   city: z.string().optional(),
@@ -63,6 +68,9 @@ export const MerchantSchema = z.object({
   // Logo del comercio como data URL (PNG/JPEG redimensionado en el cliente).
   // Tope ~280KB para no acercarse al límite de 400KB del item DynamoDB.
   logoUrl: z.string().max(280000).optional(),
+  // Estilo del sello del grid de la strip. Default efectivo lo calcula
+  // applePass: 'logo' si hay logoUrl, si no 'disc'.
+  stampStyle: StampStyleSchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -102,6 +110,7 @@ export const UpdateMerchantInput = MerchantSchema.pick({
   phone: true,
   brandColor: true,
   logoUrl: true,
+  stampStyle: true,
 }).partial();
 export type UpdateMerchantInput = z.infer<typeof UpdateMerchantInput>;
 
