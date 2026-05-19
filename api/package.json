@@ -15,6 +15,7 @@
     "aws-jwt-verify": "^5.1.1",
     "hono": "^4.5.0",
     "passkit-generator": "^3.3.0",
+    "stripe": "^17.7.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

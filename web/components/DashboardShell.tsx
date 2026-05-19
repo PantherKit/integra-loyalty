@@ -16,7 +16,15 @@ import {
 import IntegraLogo from '@/components/IntegraLogo';
 import { DashboardCtx } from '@/components/dashboard-context';
 import { cn } from '@/lib/cn';
-import { clearToken, getMe, getToken, getMyMerchant, type Merchant } from '@/lib/api';
+import {
+  clearToken,
+  getMe,
+  getToken,
+  getMyMerchant,
+  getBillingStatus,
+  type Merchant,
+  type BillingStatus,
+} from '@/lib/api';
 
 interface NavItem {
   href: string;
@@ -44,6 +52,7 @@ export default function DashboardShell({
   const router = useRouter();
   const pathname = usePathname();
   const [session, setSession] = useState<SessionState>({ status: 'checking' });
+  const [billing, setBilling] = useState<BillingStatus | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -55,11 +64,13 @@ export default function DashboardShell({
     }
     (async () => {
       try {
-        const [me, merchant] = await Promise.all([
+        const [me, merchant, billingStatus] = await Promise.all([
           getMe(),
           getMyMerchant().catch(() => null),
+          getBillingStatus().catch(() => null),
         ]);
         if (!alive) return;
+        setBilling(billingStatus);
         setSession({ status: 'ready', email: me.claims.email, merchant });
       } catch {
         if (!alive) return;
@@ -105,6 +116,60 @@ export default function DashboardShell({
   }
 
   const { email, merchant } = session;
+
+  function daysLeft(iso: string): number {
+    return Math.max(
+      0,
+      Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000)
+    );
+  }
+
+  let trialBanner: React.ReactNode = null;
+  if (billing && !billing.active) {
+    trialBanner = (
+      <div className="border-b border-red-200 bg-red-50">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <p className="text-sm font-medium text-red-800">
+            {billing.subscriptionStatus === 'past_due'
+              ? 'Tu pago no se procesó. Actualiza tu suscripción para seguir operando.'
+              : 'Tu prueba terminó — Suscríbete para seguir dando sellos y creando programas.'}
+          </p>
+          <Link
+            href="/dashboard/suscribirse/"
+            className="shrink-0 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+          >
+            Suscribirme
+          </Link>
+        </div>
+      </div>
+    );
+  } else if (
+    billing &&
+    billing.subscriptionStatus === 'trialing' &&
+    billing.trialEndsAt
+  ) {
+    const d = daysLeft(billing.trialEndsAt);
+    trialBanner = (
+      <div className="border-b border-amber-200 bg-amber-50">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+          <p className="text-sm text-amber-800">
+            Te {d === 1 ? 'queda' : 'quedan'}{' '}
+            <span className="font-semibold">
+              {d} {d === 1 ? 'día' : 'días'}
+            </span>{' '}
+            de prueba gratis.
+          </p>
+          <Link
+            href="/dashboard/suscribirse/"
+            className="shrink-0 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
+          >
+            Ver planes
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const isActive = (href: string) =>
     href === '/dashboard/'
       ? pathname === '/dashboard' || pathname === '/dashboard/'
@@ -218,6 +283,8 @@ export default function DashboardShell({
             </button>
             {brand}
           </header>
+
+          {trialBanner}
 
           <main className="flex-1 overflow-y-auto">
             <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">

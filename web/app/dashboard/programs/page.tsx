@@ -7,6 +7,7 @@ import { useDashboard } from '@/components/dashboard-context';
 import {
   createProgram,
   listMyPrograms,
+  isSubscriptionRequired,
   type LoyaltyProgram,
 } from '@/lib/api';
 
@@ -31,6 +32,7 @@ export default function ProgramsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paywalled, setPaywalled] = useState(false);
 
   useEffect(() => {
     listMyPrograms()
@@ -44,6 +46,7 @@ export default function ProgramsPage() {
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setPaywalled(false);
     setSubmitting(true);
     try {
       const created = await createProgram(form);
@@ -56,8 +59,15 @@ export default function ProgramsPage() {
         rewardType: 'free_item',
         rewardDetail: '',
       });
-    } catch {
-      setError('No se pudo crear el programa. Revisa los campos.');
+    } catch (e) {
+      if (isSubscriptionRequired(e)) {
+        setPaywalled(true);
+        setError(
+          'Tu prueba terminó o tu suscripción no está activa. Suscríbete para crear programas.'
+        );
+      } else {
+        setError('No se pudo crear el programa. Revisa los campos.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -192,8 +202,16 @@ export default function ProgramsPage() {
             </label>
           </div>
           {error && (
-            <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
+            <div className="mt-3 space-y-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              <p>{error}</p>
+              {paywalled && (
+                <Link
+                  href="/dashboard/suscribirse/"
+                  className="inline-block rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                >
+                  Ver planes y suscribirme
+                </Link>
+              )}
             </div>
           )}
           <div className="mt-4 flex justify-end gap-2">

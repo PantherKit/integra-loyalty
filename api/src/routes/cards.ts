@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { requireTenant, requireRole, MERCHANT_ROLES } from '../middleware/tenant';
+import { requireSubscription } from '../middleware/paywall';
 import { getCard, getCardById, listCardsByPhoneInTenant, stampCard, redeemCard } from '../lib/repositories/card';
 import { getProgram } from '../lib/repositories/program';
 import { getMerchantByTenant } from '../lib/repositories/merchant';
@@ -77,7 +78,7 @@ cards.get('/:id/pkpass', async (c) => {
 /**
  * POST /cards/:id/stamp — agrega sellos (auth requerida).
  */
-cards.post('/:id/stamp', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
+cards.post('/:id/stamp', requireTenant, requireRole(...MERCHANT_ROLES), requireSubscription, async (c) => {
   const tenantId = c.get('tenantId');
   const userId = c.get('userId');
   const cardId = c.req.param('id');
@@ -120,7 +121,7 @@ cards.post('/:id/stamp', requireTenant, requireRole(...MERCHANT_ROLES), async (c
 /**
  * POST /cards/:id/redeem — canjea premio (auth requerida).
  */
-cards.post('/:id/redeem', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
+cards.post('/:id/redeem', requireTenant, requireRole(...MERCHANT_ROLES), requireSubscription, async (c) => {
   const tenantId = c.get('tenantId');
   const userId = c.get('userId');
   const cardId = c.req.param('id');

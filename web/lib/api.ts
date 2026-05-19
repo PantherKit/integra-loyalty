@@ -190,3 +190,35 @@ export async function redeemCardApi(cardId: string, note?: string): Promise<{ ca
 export async function getActivity(limit = 20): Promise<{ items: Transaction[] }> {
   return request<{ items: Transaction[] }>(`/activity?limit=${limit}`);
 }
+
+// Billing — suscripción Stripe (prueba 14 días + paywall)
+
+export type BillingPlan = 'basico' | 'pro' | 'multi';
+
+export interface BillingStatus {
+  subscriptionStatus: 'trialing' | 'active' | 'past_due' | 'canceled' | 'none';
+  trialEndsAt: string | null;
+  plan: BillingPlan | null;
+  currentPeriodEnd: string | null;
+  active: boolean;
+  reason: string;
+}
+
+export async function getBillingStatus(): Promise<BillingStatus> {
+  return request<BillingStatus>('/billing/status');
+}
+
+/** Crea la Checkout Session y redirige el browser a Stripe. */
+export async function startCheckout(plan: BillingPlan): Promise<void> {
+  const { url } = await request<{ url: string }>('/billing/checkout', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  });
+  window.location.href = url;
+}
+
+/** true si el error de la API es un 402 subscription_required (paywall). */
+export function isSubscriptionRequired(e: unknown): boolean {
+  const err = e as { status?: number; body?: { error?: string } };
+  return err?.status === 402 && err?.body?.error === 'subscription_required';
+}

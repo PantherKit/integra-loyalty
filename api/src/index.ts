@@ -9,6 +9,7 @@ import { publicRoutes } from './routes/public';
 import { cards } from './routes/cards';
 import { activity } from './routes/activity';
 import { wallet } from './routes/wallet';
+import { billing } from './routes/billing';
 
 const app = new Hono();
 
@@ -28,6 +29,7 @@ app.route('/merchants', merchants);
 app.route('/programs', programs);
 app.route('/cards', cards); // GET /cards/:id público; /lookup, /:id/stamp, /:id/redeem con auth
 app.route('/activity', activity);
+app.route('/billing', billing); // checkout/status (auth) + webhook (público, raw body)
 app.route('/v1', wallet); // PassKit Web Service de Apple (Apple agrega /v1 a webServiceURL)
 app.route('/', publicRoutes); // /m/:slug, /m/:slug/customers
 

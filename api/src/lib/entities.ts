@@ -4,11 +4,33 @@ import { z } from 'zod';
 // Tenant
 // =============================================================================
 
+// Planes de suscripción de pago (Stripe). Distinto del legacy `plan`
+// (free/pro/enterprise) que se conserva por compatibilidad de tenants viejos.
+export const BillingPlanSchema = z.enum(['basico', 'pro', 'multi']);
+export type BillingPlan = z.infer<typeof BillingPlanSchema>;
+
+export const SubscriptionStatusSchema = z.enum([
+  'trialing',
+  'active',
+  'past_due',
+  'canceled',
+  'none',
+]);
+export type SubscriptionStatus = z.infer<typeof SubscriptionStatusSchema>;
+
 export const TenantSchema = z.object({
   type: z.literal('TENANT'),
   tenantId: z.string().uuid(),
   plan: z.enum(['free', 'pro', 'enterprise']).default('free'),
   status: z.enum(['active', 'suspended', 'cancelled']).default('active'),
+  // --- Suscripción Stripe (todos opcionales: tenants viejos no los tienen) ---
+  subscriptionStatus: SubscriptionStatusSchema.optional(),
+  stripeCustomerId: z.string().optional(),
+  stripeSubscriptionId: z.string().optional(),
+  // Plan de pago elegido (basico|pro|multi). Independiente de `plan` legacy.
+  billingPlan: BillingPlanSchema.optional(),
+  trialEndsAt: z.string().datetime().optional(),
+  currentPeriodEnd: z.string().datetime().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

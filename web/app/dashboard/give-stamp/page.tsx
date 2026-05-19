@@ -12,11 +12,16 @@ import {
   stampCard,
   redeemCardApi,
   listMyPrograms,
+  isSubscriptionRequired,
   type Card,
   type LoyaltyProgram,
 } from '@/lib/api';
 
+const PAYWALL_MSG =
+  'Tu prueba terminó o tu suscripción no está activa. Suscríbete para seguir dando sellos.';
+
 function errMsg(e: unknown, fallback: string): string {
+  if (isSubscriptionRequired(e)) return PAYWALL_MSG;
   const body = (e as { body?: { error?: string; hint?: string } })?.body;
   return body?.hint ?? body?.error ?? fallback;
 }
@@ -29,6 +34,7 @@ export default function GiveStampPage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [programs, setPrograms] = useState<LoyaltyProgram[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [paywalled, setPaywalled] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [redeemTarget, setRedeemTarget] = useState<Card | null>(null);
@@ -46,6 +52,7 @@ export default function GiveStampPage() {
   async function onSearch(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setPaywalled(false);
     setNotice(null);
     setSearching(true);
     setSearched(false);
@@ -64,6 +71,7 @@ export default function GiveStampPage() {
   async function onStamp(cardId: string) {
     setBusy(cardId);
     setError(null);
+    setPaywalled(false);
     setNotice(null);
     try {
       const result = await stampCard(cardId, 1);
@@ -72,6 +80,7 @@ export default function GiveStampPage() {
       );
       setNotice('Sello agregado correctamente.');
     } catch (e) {
+      setPaywalled(isSubscriptionRequired(e));
       setError(errMsg(e, 'No se pudo dar el sello.'));
     } finally {
       setBusy(null);
@@ -83,6 +92,7 @@ export default function GiveStampPage() {
     const cardId = redeemTarget.cardId;
     setBusy(cardId);
     setError(null);
+    setPaywalled(false);
     setNotice(null);
     try {
       const result = await redeemCardApi(cardId);
@@ -92,6 +102,7 @@ export default function GiveStampPage() {
       setNotice('Premio canjeado. Entrega la recompensa al cliente.');
       setRedeemTarget(null);
     } catch (e) {
+      setPaywalled(isSubscriptionRequired(e));
       setError(errMsg(e, 'No se pudo canjear el premio.'));
       setRedeemTarget(null);
     } finally {
@@ -150,7 +161,19 @@ export default function GiveStampPage() {
       {error && (
         <div className="flex items-start gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
-          <span>{error}</span>
+          <div className="space-y-2">
+            <span>{error}</span>
+            {paywalled && (
+              <div>
+                <Link
+                  href="/dashboard/suscribirse/"
+                  className="inline-block rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                >
+                  Ver planes y suscribirme
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

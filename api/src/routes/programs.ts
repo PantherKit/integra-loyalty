@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { requireTenant, requireRole, MERCHANT_ROLES } from '../middleware/tenant';
+import { requireSubscription } from '../middleware/paywall';
 import { createProgram, listProgramsByTenant, getProgram } from '../lib/repositories/program';
 import { CreateProgramInput } from '../lib/entities';
 
 export const programs = new Hono();
 
-programs.post('/', requireTenant, requireRole(...MERCHANT_ROLES), async (c) => {
+programs.post('/', requireTenant, requireRole(...MERCHANT_ROLES), requireSubscription, async (c) => {
   const tenantId = c.get('tenantId');
   const body = await c.req.json().catch(() => null);
   const parsed = CreateProgramInput.safeParse(body);

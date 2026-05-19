@@ -129,6 +129,9 @@ export class IntegraLoyaltyStack extends cdk.Stack {
         APPLE_PASS_SECRET: 'integra-loyalty/apple-pass',
         // Base que el pase declara como webServiceURL (Apple le agrega /v1).
         PUBLIC_API_URL: 'https://tcsbnd5m3l.execute-api.us-east-1.amazonaws.com',
+        STRIPE_SECRET_NAME: 'integra-loyalty/stripe',
+        // URL del front para success/cancel de Stripe Checkout.
+        PUBLIC_WEB_URL: 'https://dewt2ht9lbl07.cloudfront.net',
       },
       bundling: {
         format: nodeLambda.OutputFormat.ESM,
@@ -151,6 +154,13 @@ export class IntegraLoyaltyStack extends cdk.Stack {
       this,
       'ApplePassSecret',
       'integra-loyalty/apple-pass'
+    ).grantRead(apiFn);
+
+    // Llave de Stripe (creado fuera de CDK por nombre). Solo lectura.
+    secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'StripeSecret',
+      'integra-loyalty/stripe'
     ).grantRead(apiFn);
 
     // Grant a Lambda para hacer SignUp + AdminConfirm + InitiateAuth en Cognito
