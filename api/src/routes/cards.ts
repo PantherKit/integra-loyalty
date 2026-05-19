@@ -102,9 +102,10 @@ cards.post('/:id/stamp', requireTenant, requireRole(...MERCHANT_ROLES), async (c
       performedByUserId: userId,
       note: parsed.data.note,
     });
-    // Best-effort: actualiza el pase de Apple Wallet vía APNs. No bloquea
-    // ni afecta el 200 al comercio si APNs falla.
-    void notifyPassUpdate(tenantId, cardId).catch(() => {});
+    // Best-effort PERO con await: en Lambda el proceso se congela al
+    // responder, así que un fire-and-forget nunca correría. notifyPassUpdate
+    // jamás lanza (best-effort interno) — no afecta el 200 al comercio.
+    await notifyPassUpdate(tenantId, cardId);
     return c.json(result);
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';
@@ -143,9 +144,9 @@ cards.post('/:id/redeem', requireTenant, requireRole(...MERCHANT_ROLES), async (
       performedByUserId: userId,
       note: parsed.data.note,
     });
-    // Best-effort: actualiza el pase de Apple Wallet vía APNs. No bloquea
-    // ni afecta el 200 al comercio si APNs falla.
-    void notifyPassUpdate(tenantId, cardId).catch(() => {});
+    // Best-effort PERO con await (Lambda congela el proceso al responder;
+    // un fire-and-forget nunca correría). notifyPassUpdate jamás lanza.
+    await notifyPassUpdate(tenantId, cardId);
     return c.json(result);
   } catch (e) {
     const msg = e instanceof Error ? e.message : '';

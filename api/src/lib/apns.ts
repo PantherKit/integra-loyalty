@@ -6,6 +6,17 @@ import { listRegistrationsByCard } from './repositories/passRegistration';
 const APNS_HOST = 'https://api.push.apple.com';
 
 /**
+ * Extrae bloques PEM limpios. Los certs exportados con openssl traen un
+ * preámbulo "Bag Attributes ..." antes de -----BEGIN-----; el TLS nativo
+ * de Node puede fallar el handshake con eso (sobre todo con key cifrada),
+ * produciendo status 0. Nos quedamos solo con los bloques -----BEGIN/END-----.
+ */
+function cleanPem(pem: string): string {
+  const blocks = pem.match(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g);
+  return blocks ? blocks.join('\n') + '\n' : pem;
+}
+
+/**
  * Notifica a Apple que el pase de una card cambió, para que los devices
  * registrados hagan pull del pase actualizado vía el PassKit Web Service.
  *
@@ -36,23 +47,40 @@ export async function notifyPassUpdate(tenantId: string, cardId: string): Promis
   let session: http2.ClientHttp2Session;
   try {
     session = http2.connect(APNS_HOST, {
-      cert: creds.signerCert,
-      key: creds.signerKey,
+      cert: cleanPem(creds.signerCert),
+      key: cleanPem(creds.signerKey),
       passphrase: creds.passphrase,
     });
   } catch (err) {
-    console.error('apns_connect_failed', { tenantId, cardId, err });
+    console.error('apns_connect_failed', { tenantId, cardId, err: String(err) });
     return;
   }
 
   session.on('error', (err) => {
-    console.error('apns_session_error', { tenantId, cardId, err });
+    console.error('apns_session_error', {
+      tenantId,
+      cardId,
+      msg: (err as Error)?.message,
+      code: (err as NodeJS.ErrnoException)?.code,
+    });
+  });
+  session.on('goaway', (errorCode, _lastStreamID, opaqueData) => {
+    console.error('apns_goaway', {
+      cardId,
+      errorCode,
+      data: opaqueData?.toString('utf8').slice(0, 200),
+    });
   });
 
   try {
-    await Promise.all(
-      regs.map((reg) => sendOne(session, reg.pushToken, creds.passTypeId, cardId))
-    );
+    // Cota dura: el comercio espera este await; si APNs cuelga, no más de 6s.
+    const timeout = new Promise<void>((r) => setTimeout(r, 6000));
+    await Promise.race([
+      Promise.all(
+        regs.map((reg) => sendOne(session, reg.pushToken, creds.passTypeId, cardId))
+      ),
+      timeout,
+    ]);
   } finally {
     try {
       session.close();
@@ -77,13 +105,13 @@ function sendOne(
     };
 
     try {
+      // PassKit pass update: solo apns-topic (= passTypeId) + payload vacío.
+      // Evitamos apns-push-type 'background' (APNs puede resetear el stream
+      // -> status 0 sin body, exactamente lo que vimos).
       const req = session.request({
         ':method': 'POST',
         ':path': `/3/device/${pushToken}`,
         'apns-topic': passTypeId,
-        'apns-push-type': 'background',
-        'apns-priority': '5',
-        'content-type': 'application/json',
       });
 
       let status = 0;
@@ -110,8 +138,22 @@ function sendOne(
         done();
       });
       req.on('error', (err) => {
-        console.error('apns_request_error', { cardId, token: pushToken.slice(0, 8), err });
+        console.error('apns_request_error', {
+          cardId,
+          token: pushToken.slice(0, 8),
+          msg: (err as Error)?.message,
+          code: (err as NodeJS.ErrnoException)?.code,
+        });
         done();
+      });
+      req.on('close', () => {
+        if (status === 0) {
+          console.error('apns_stream_closed_no_response', {
+            cardId,
+            token: pushToken.slice(0, 8),
+            rstCode: req.rstCode,
+          });
+        }
       });
 
       // Pase update: body vacío `{}` es lo que Apple espera.
