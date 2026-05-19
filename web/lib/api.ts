@@ -79,6 +79,7 @@ export interface Merchant {
   name: string;
   industry: string;
   brandColor?: string;
+  logoUrl?: string;
   phone?: string;
 }
 
@@ -120,7 +121,7 @@ export async function listMyPrograms(): Promise<{ items: LoyaltyProgram[] }> {
 
 // Public (sin auth) — landing del merchant + customer signup + card lookup
 export interface PublicMerchant {
-  merchant: { slug: string; name: string; industry: string; brandColor?: string };
+  merchant: { slug: string; name: string; industry: string; brandColor?: string; logoUrl?: string };
   program: { programId: string; name: string; description?: string; stampsRequired: number; rewardDetail: string } | null;
 }
 

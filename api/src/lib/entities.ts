@@ -60,6 +60,9 @@ export const MerchantSchema = z.object({
   address: AddressSchema.optional(),
   phone: z.string().regex(/^\+\d{10,15}$/).optional(),
   brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  // Logo del comercio como data URL (PNG/JPEG redimensionado en el cliente).
+  // Tope ~280KB para no acercarse al límite de 400KB del item DynamoDB.
+  logoUrl: z.string().max(280000).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -98,6 +101,7 @@ export const UpdateMerchantInput = MerchantSchema.pick({
   address: true,
   phone: true,
   brandColor: true,
+  logoUrl: true,
 }).partial();
 export type UpdateMerchantInput = z.infer<typeof UpdateMerchantInput>;
 

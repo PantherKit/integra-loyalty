@@ -293,6 +293,7 @@ function GiveStampInner() {
                     merchantName={merchant?.name ?? 'Tu comercio'}
                     brandColor={merchant?.brandColor ?? '#4f46e5'}
                     tagline={merchant?.industry}
+                    logoUrl={merchant?.logoUrl}
                     programName={program?.name ?? 'Programa de lealtad'}
                     stampsRequired={required}
                     rewardDetail={program?.rewardDetail ?? 'Recompensa'}

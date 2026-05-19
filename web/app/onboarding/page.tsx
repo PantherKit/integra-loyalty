@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Check,
   GripVertical,
@@ -11,6 +12,8 @@ import {
   ArrowLeft,
   Copy,
   Sparkles,
+  ImagePlus,
+  LogIn,
 } from 'lucide-react';
 import {
   signup,
@@ -42,6 +45,38 @@ const INDUSTRIES = [
   { v: 'other', l: 'Otro' },
 ] as const;
 
+/** Redimensiona la imagen en el cliente a un cuadrado ~256px y la devuelve
+ *  como data URL liviano (<~60KB). Evita subir archivos grandes a DynamoDB. */
+function resizeLogo(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) return reject(new Error('no_image'));
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read_error'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('img_error'));
+      img.onload = () => {
+        const S = 256;
+        const canvas = document.createElement('canvas');
+        canvas.width = S;
+        canvas.height = S;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('no_ctx'));
+        // contain centrado sobre blanco
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, S, S);
+        const scale = Math.min(S / img.width, S / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -52,6 +87,7 @@ export default function OnboardingPage() {
     INDUSTRIES.find((x) => x.v === industry)?.l ?? 'Negocio';
   const [color, setColor] = useState(COLORS[0]);
   const [logoText, setLogoText] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
   const [reward, setReward] = useState(REWARDS[0]);
   const [stamps, setStamps] = useState(8);
 
@@ -59,6 +95,7 @@ export default function OnboardingPage() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailExists, setEmailExists] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -66,10 +103,11 @@ export default function OnboardingPage() {
 
   async function finish() {
     setError(null);
+    setEmailExists(false);
     setBusy(true);
     try {
       await signup({ email, password, merchantName: name.trim(), industry });
-      await updateMyMerchant({ brandColor: color });
+      await updateMyMerchant({ brandColor: color, logoUrl });
       await createProgram({
         name: `Tarjeta de ${name.trim()}`,
         description: `Acumula sellos en ${name.trim()}`,
@@ -83,9 +121,10 @@ export default function OnboardingPage() {
       setStep(4);
     } catch (e: unknown) {
       const body = (e as { body?: { error?: string } })?.body;
-      if (body?.error === 'email_already_registered')
-        setError('Ese correo ya tiene una cuenta. Inicia sesión.');
-      else setError('No pudimos crear la cuenta. Revisa tus datos e intenta de nuevo.');
+      if (body?.error === 'email_already_registered') {
+        setEmailExists(true);
+        setError('Ese correo ya tiene una cuenta.');
+      } else setError('No pudimos crear la cuenta. Revisa tus datos e intenta de nuevo.');
     } finally {
       setBusy(false);
     }
@@ -97,6 +136,7 @@ export default function OnboardingPage() {
       brandColor={color}
       tagline={industryLabel}
       logoText={logoText}
+      logoUrl={logoUrl}
       programName={`Tarjeta de ${name.trim() || 'tu negocio'}`}
       stampsRequired={stamps}
       rewardDetail={reward}
@@ -206,14 +246,64 @@ export default function OnboardingPage() {
                       ))}
                     </div>
                   </Field>
-                  <Field label="Iniciales del logo (opcional)">
-                    <input
-                      value={logoText}
-                      onChange={(e) => setLogoText(e.target.value.slice(0, 3))}
-                      placeholder="Auto"
-                      className="input w-24"
-                    />
+                  <Field label="Logo del negocio (opcional)">
+                    <div className="flex items-center gap-3">
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 grid place-items-center">
+                        {logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={logoUrl}
+                            alt="logo"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">Sin logo</span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:border-brand-400">
+                          <ImagePlus size={15} />
+                          {logoUrl ? 'Cambiar logo' : 'Subir logo'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const f = e.target.files?.[0];
+                              if (!f) return;
+                              try {
+                                setLogoUrl(await resizeLogo(f));
+                              } catch {
+                                setError('No pudimos leer esa imagen. Usa PNG o JPG.');
+                              }
+                            }}
+                          />
+                        </label>
+                        {logoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setLogoUrl(undefined)}
+                            className="w-fit text-xs text-gray-500 hover:text-gray-800"
+                          >
+                            Quitar
+                          </button>
+                        )}
+                        <span className="text-xs text-gray-400">
+                          PNG o JPG. Se ajusta solo.
+                        </span>
+                      </div>
+                    </div>
                   </Field>
+                  {!logoUrl && (
+                    <Field label="O usa iniciales">
+                      <input
+                        value={logoText}
+                        onChange={(e) => setLogoText(e.target.value.slice(0, 3))}
+                        placeholder="Auto"
+                        className="input w-24"
+                      />
+                    </Field>
+                  )}
                   <Nav
                     onNext={() => setStep(1)}
                     nextDisabled={!canDesign}
@@ -313,9 +403,17 @@ export default function OnboardingPage() {
                     />
                   </Field>
                   {error && (
-                    <p className="bg-red-50 text-red-700 text-sm rounded-lg px-3 py-2">
-                      {error}
-                    </p>
+                    <div className="bg-red-50 text-red-700 text-sm rounded-lg px-3 py-3 space-y-2">
+                      <p>{error}</p>
+                      {emailExists && (
+                        <Link
+                          href="/login/"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-700"
+                        >
+                          <LogIn size={14} /> Ir a iniciar sesión
+                        </Link>
+                      )}
+                    </div>
                   )}
                   <div className="flex items-center justify-between pt-2">
                     <button

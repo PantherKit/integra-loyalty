@@ -259,6 +259,7 @@ export default function ResumenPage() {
                 merchantName={merchant?.name ?? 'Tu comercio'}
                 brandColor={merchant?.brandColor ?? '#4f46e5'}
                 tagline={merchant?.industry}
+                logoUrl={merchant?.logoUrl}
                 programName={activeProgram?.name ?? 'Programa de lealtad'}
                 stampsRequired={activeProgram?.stampsRequired ?? DEFAULT_STAMPS_REQUIRED}
                 rewardDetail={
