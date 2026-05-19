@@ -56,7 +56,7 @@ function resizeLogo(file: File): Promise<string> {
       const img = new Image();
       img.onerror = () => reject(new Error('img_error'));
       img.onload = () => {
-        const S = 256;
+        const S = 220;
         const canvas = document.createElement('canvas');
         canvas.width = S;
         canvas.height = S;
@@ -69,7 +69,8 @@ function resizeLogo(file: File): Promise<string> {
         const w = img.width * scale;
         const h = img.height * scale;
         ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
+        // PNG: Apple Wallet solo acepta PNG para las imágenes del pase.
+        resolve(canvas.toDataURL('image/png'));
       };
       img.src = reader.result as string;
     };

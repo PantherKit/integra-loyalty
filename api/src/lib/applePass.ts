@@ -194,6 +194,25 @@ function hexToRgbTuple(hex: string | undefined): [number, number, number] {
   ];
 }
 
+/** Color de texto legible (blanco/negro) sobre el color de marca. */
+function contrastOn(hex: string | undefined): string {
+  const [r, g, b] = hexToRgbTuple(hex);
+  const L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return L > 0.62 ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)';
+}
+
+/** Decodifica un data URL PNG a Buffer. null si no es PNG válido. */
+function pngFromDataUrl(dataUrl: string | undefined): Buffer | null {
+  if (!dataUrl) return null;
+  const m = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl.trim());
+  if (!m) return null;
+  try {
+    return Buffer.from(m[1], 'base64');
+  } catch {
+    return null;
+  }
+}
+
 // =============================================================================
 // buildPkpass
 // =============================================================================
@@ -209,12 +228,16 @@ export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs):
 
   const bgRgb = hexToRgbString(merchant.brandColor, 'rgb(30, 30, 40)');
   const [br, bg, bb] = hexToRgbTuple(merchant.brandColor);
+  const fgRgb = contrastOn(merchant.brandColor);
 
-  // PNGs requeridos por Apple. logo usa color de marca; icon también.
-  const icon = solidPng(29, br, bg, bb);
-  const icon2x = solidPng(58, br, bg, bb);
-  const logo = solidPng(160, br, bg, bb);
-  const logo2x = solidPng(320, br, bg, bb);
+  // Logo real del comercio (PNG subido en el onboarding). Si no hay, cae a
+  // un bloque sólido (Apple igual exige las imágenes).
+  const brandLogo = pngFromDataUrl(merchant.logoUrl);
+  const solidSm = solidPng(58, br, bg, bb);
+  const icon = brandLogo ?? solidPng(29, br, bg, bb);
+  const icon2x = brandLogo ?? solidSm;
+  const logo = brandLogo ?? solidPng(160, br, bg, bb);
+  const logo2x = brandLogo ?? solidPng(320, br, bg, bb);
 
   // Web Service: Apple le agrega /v1 — la URL va SIN slash final y SIN /v1.
   const webServiceURL =
@@ -234,8 +257,8 @@ export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs):
     serialNumber: card.cardId,
     logoText: merchant.name,
     backgroundColor: bgRgb,
-    foregroundColor: 'rgb(255, 255, 255)',
-    labelColor: 'rgb(255, 255, 255)',
+    foregroundColor: fgRgb,
+    labelColor: fgRgb,
     webServiceURL,
     authenticationToken,
     storeCard: {},
@@ -259,22 +282,49 @@ export async function buildPkpass({ card, program, merchant }: BuildPkpassArgs):
 
   pass.type = 'storeCard';
 
-  pass.primaryFields.push({
-    key: 'stamps',
+  const remaining = Math.max(0, program.stampsRequired - card.stamps);
+  const complete = card.stamps >= program.stampsRequired;
+
+  // Header: visible incluso cuando el pase está apilado en Wallet.
+  pass.headerFields.push({
+    key: 'count',
     label: 'SELLOS',
-    value: `${card.stamps} / ${program.stampsRequired}`,
+    value: `${card.stamps}/${program.stampsRequired}`,
   });
 
-  pass.secondaryFields.push(
+  pass.primaryFields.push({
+    key: 'progress',
+    label: 'TU PROGRESO',
+    value: complete ? '¡Premio listo! 🎉' : `Te faltan ${remaining}`,
+  });
+
+  pass.secondaryFields.push({
+    key: 'reward',
+    label: 'TU PREMIO',
+    value: program.rewardDetail,
+  });
+
+  pass.auxiliaryFields.push({
+    key: 'merchant',
+    label: 'COMERCIO',
+    value: merchant.name,
+  });
+
+  pass.backFields.push(
     {
-      key: 'reward',
-      label: 'PREMIO',
-      value: program.rewardDetail,
+      key: 'how',
+      label: 'Cómo funciona',
+      value: `Junta ${program.stampsRequired} sellos y obtén: ${program.rewardDetail}. Muestra esta tarjeta en ${merchant.name} para que te sellen.`,
     },
     {
-      key: 'merchant',
-      label: 'COMERCIO',
-      value: merchant.name,
+      key: 'program',
+      label: 'Programa',
+      value: program.name,
+    },
+    {
+      key: 'support',
+      label: 'Soporte',
+      value: 'Integra Lealtad — soporte@integra-group.ai',
     }
   );
 
