@@ -115,11 +115,54 @@ body {
 /* Tarjeta derecha: más lenta y con scale para dar peso visual */
 .hero-card { animation: hero-card-in 0.80s cubic-bezier(0.16,1,0.3,1) 200ms both; }
 
+/* ── Text Animations ────────────────────────────────────── */
+
+@keyframes shiny-text {
+  0%, 10% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-shiny-text {
+  color: transparent;
+  background: linear-gradient(
+    120deg,
+    rgba(100, 100, 100, 0.5) 40%,
+    rgba(0, 0, 0, 1) 50%,
+    rgba(100, 100, 100, 0.5) 60%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shiny-text 3s linear infinite;
+}
+
+.animate-gradient-shift {
+  background-size: 200% auto;
+  animation: gradient-shift 4s ease-in-out infinite;
+}
+
 /* ── Motion System ──────────────────────────────────────── */
 
 @keyframes float-soft {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-16px); }
+}
+
+@keyframes aurora-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes aurora-breathe {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.5; }
+  50% { transform: scale(1.2) translate(-10px, 10px); opacity: 0.8; }
 }
 
 .animate-float-slow {
@@ -133,6 +176,10 @@ body {
 .animate-float-slowest {
   animation: float-soft 10s ease-in-out infinite 2s;
 }
+
+.animate-aurora-1 { animation: aurora-spin 15s linear infinite; }
+.animate-aurora-2 { animation: aurora-spin 20s linear infinite reverse; }
+.animate-aurora-3 { animation: aurora-breathe 8s ease-in-out infinite; }
 
 :root {
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);

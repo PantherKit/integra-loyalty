@@ -86,22 +86,46 @@ const CAPABILITIES = [
 
 const PLANS = [
   {
-    name: 'Piloto',
-    price: '$349',
-    detail: '1 sucursal',
-    features: ['1 tarjeta de lealtad', 'Apple + Google Wallet', 'QR de alta', 'Panel básico'],
+    name: 'Starter',
+    price: '$699',
+    detail: 'Perfecto para pequeños negocios y emprendedores.',
+    highlight: false,
+    features: [
+      '1 Establecimiento',
+      'Panel de métricas básico',
+      'Hasta 400 tarjetas activas',
+      '1 Administrador',
+      'Base de datos',
+      'Soporte básico',
+      'Alta por QR (estándar)'
+    ],
   },
   {
-    name: 'Operación',
-    price: '$649',
-    detail: 'programa activo',
-    features: ['Clientes ilimitados', 'Campañas y cumpleaños', 'Geo-notificaciones', 'Onboarding asistido'],
+    name: 'Core',
+    price: '$999',
+    detail: 'Automatiza la lealtad con métricas y notificaciones.',
+    highlight: true,
+    features: [
+      'Todo lo de Starter',
+      'Panel de métricas avanzado',
+      'Hasta 600 tarjetas activas',
+      'Notificaciones por geolocalización',
+      'Automatizaciones básicas',
+      'Reseñas de Google'
+    ],
   },
   {
-    name: 'Multi-sucursal',
-    price: '$1,190',
-    detail: 'cadenas y franquicias',
-    features: ['3 sucursales incluidas', 'Clientes unificados', 'Reportes por sucursal', 'Roles y permisos'],
+    name: 'Grow',
+    price: '$1,429',
+    detail: 'Accede a herramientas avanzadas y personalización total.',
+    highlight: false,
+    features: [
+      'Todo lo de Core',
+      '2 Establecimientos',
+      'Hasta 1,200 tarjetas activas',
+      '2 Administradores',
+      'Soporte prioritario'
+    ],
   },
 ];
 
@@ -327,25 +351,24 @@ export default function Home() {
       {/* ── Precios ────────────────────────────────────────── */}
       <section id="precios" className="bg-white py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-10 lg:grid-cols-[0.52fr_1fr] lg:items-start">
-            <div>
-              <p className="reveal font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Planes</p>
-              <h2 className="reveal stagger-1 mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
-                Precio simple para validar rápido.
-              </h2>
-              <p className="reveal stagger-2 mt-6 max-w-xl text-base leading-[1.75] text-[#5a5450]">
-                14 días gratis. Sin tarjeta de crédito. Los planes quedan como soporte comercial, no como el centro del mensaje.
-              </p>
-            </div>
-            <div className="divide-y divide-paper-300 border-y border-paper-300">
-              {PLANS.map((plan, index) => (
-                <PlanRow
-                  key={plan.name}
-                  {...plan}
-                  className={`reveal stagger-${index + 1}`}
-                />
-              ))}
-            </div>
+          <div className="mb-16 text-center">
+            <p className="reveal font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Inversión</p>
+            <h2 className="reveal stagger-1 mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
+              Precio simple para escalar rápido.
+            </h2>
+            <p className="reveal stagger-2 mt-6 mx-auto max-w-xl text-base leading-[1.75] text-[#5a5450]">
+              14 días gratis. Sin tarjeta de crédito. Los planes quedan como soporte comercial, no como el centro del mensaje.
+            </p>
+          </div>
+          
+          <div className="grid gap-8 lg:grid-cols-3">
+            {PLANS.map((plan, index) => (
+              <PlanCard
+                key={plan.name}
+                {...plan}
+                className={`reveal stagger-${index + 1}`}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -484,43 +507,134 @@ function Capability({
   );
 }
 
-function PlanRow({
+function PlanCard({
   name,
   price,
   detail,
+  highlight,
   features,
   className,
 }: {
   name: string;
   price: string;
   detail: string;
+  highlight?: boolean;
   features: string[];
   className?: string;
 }) {
   return (
-    <div className={cn('grid gap-5 py-7 lg:grid-cols-[0.35fr_0.25fr_1fr_auto] lg:items-start', className)}>
-      <div>
-        <h3 className="text-xl font-semibold tracking-[-0.018em] text-ink-900">{name}</h3>
-        <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#8c8780]">{detail}</p>
+    <div
+      className={cn(
+        'group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] bg-white transition-all duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-2 hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] sm:p-1',
+        'shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-paper-300/50',
+        className
+      )}
+    >
+      {/* ── CONTORNO GLOW ELEGANTE (Hover) ── */}
+      <div className="pointer-events-none absolute inset-0 z-20 opacity-0 transition-opacity duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100">
+        <div 
+          className="absolute inset-0 rounded-[2.5rem] border-[1.5px] border-accent-500/50" 
+          style={{ 
+            maskImage: 'linear-gradient(to bottom, black 0%, transparent 60%)', 
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 60%)' 
+          }} 
+        />
       </div>
-      <div>
-        <span className="text-3xl font-semibold tracking-[-0.03em] text-ink-900">{price}</span>
-        <span className="block text-xs text-[#8c8780]">MXN/mes</span>
+
+      {/* ── HEADER CON AURORA ── */}
+      <div className="relative overflow-hidden rounded-[2.25rem] bg-paper-50 px-8 pb-8 pt-10">
+        
+        {/* Glows difusos en el fondo del header (dependen del plan) */}
+        <div className="pointer-events-none absolute inset-0 opacity-80 mix-blend-multiply">
+          {name === 'Starter' && (
+            <>
+              <div className="animate-aurora-1 absolute -left-10 top-0 h-40 w-40 rounded-full bg-orange-100 blur-3xl" />
+              <div className="animate-aurora-2 absolute -right-10 top-10 h-40 w-40 rounded-full bg-blue-100/50 blur-3xl" />
+            </>
+          )}
+          {name === 'Core' && (
+            <>
+              <div className="animate-aurora-1 absolute -left-10 top-0 h-40 w-40 rounded-full bg-blue-200/60 blur-3xl" />
+              <div className="animate-aurora-2 absolute -right-10 top-10 h-40 w-40 rounded-full bg-orange-200/60 blur-3xl" />
+              <div className="animate-aurora-3 absolute left-1/2 top-0 h-32 w-32 -translate-x-1/2 rounded-full bg-purple-300/50 blur-3xl" />
+            </>
+          )}
+          {name === 'Grow' && (
+            <>
+              <div className="animate-aurora-1 absolute -left-10 top-0 h-40 w-40 rounded-full bg-purple-200/50 blur-3xl" />
+              <div className="animate-aurora-2 absolute -right-10 top-10 h-40 w-40 rounded-full bg-rose-200/50 blur-3xl" />
+            </>
+          )}
+        </div>
+
+        <div className="relative z-10">
+          <div className="flex flex-col items-start gap-1">
+            {/* Contenedor de altura fija para alinear los títulos */}
+            <div className="h-7">
+              {name === 'Core' && (
+                <div className="inline-flex animate-shiny-text items-center justify-center rounded-full border border-paper-300/60 bg-white/50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest backdrop-blur-sm">
+                  Recomendado
+                </div>
+              )}
+            </div>
+            <h3 className={cn(
+              'text-xl font-semibold tracking-tight',
+              name === 'Grow' ? 'animate-gradient-shift bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 bg-clip-text text-transparent' : 'text-ink-900'
+            )}>
+              {name}
+            </h3>
+          </div>
+          
+          <div className="mt-2 flex items-baseline gap-3">
+            <span className="text-6xl font-bold tracking-tighter text-ink-900">{price}</span>
+            <div className="flex flex-col text-xs font-medium leading-tight text-[#8c8780]">
+              <span>/ mes</span>
+              <span>facturado anual</span>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <Link
+              href="/onboarding/"
+              className={cn(
+                'inline-flex min-h-[3.25rem] w-full items-center justify-center rounded-[1.25rem] text-sm font-semibold transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]',
+                name === 'Starter'
+                  ? 'bg-[#f0f0f0] text-ink-900 hover:bg-[#e5e5e5]'
+                  : 'bg-ink-900 text-white shadow-[0_4px_14px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)]'
+              )}
+            >
+              Empezar ahora
+            </Link>
+          </div>
+        </div>
       </div>
-      <ul className="grid gap-2 text-sm text-[#5a5450] sm:grid-cols-2">
-        {features.map((feature) => (
-          <li key={feature} className="flex gap-2">
-            <Check size={16} className="mt-0.5 shrink-0 text-accent-500" />
-            {feature}
-          </li>
-        ))}
-      </ul>
-      <Link
-        href="/onboarding/"
-        className="inline-flex min-h-11 items-center justify-center rounded-full border border-paper-300 bg-white px-5 py-2.5 text-sm font-semibold text-ink-900 transition hover:border-[#cdc6b9]"
-      >
-        Empezar
-      </Link>
+
+      {/* ── FOOTER CON FEATURES ── */}
+      <div className="px-8 pb-10 pt-8">
+        <ul className="grid gap-4 text-sm text-ink-900">
+          {features.map((feature) => {
+            const isTodoFeature = feature.startsWith('Todo lo de');
+            return (
+              <li key={feature} className="flex items-start gap-3">
+                <Check 
+                  size={18} 
+                  strokeWidth={2.5} 
+                  className={cn("mt-0.5 shrink-0", isTodoFeature ? "text-accent-500" : "text-ink-900")} 
+                />
+                <span className={cn(
+                  "leading-relaxed",
+                  isTodoFeature && "animate-gradient-shift bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 bg-clip-text text-transparent font-medium"
+                )}>
+                  {feature}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="mt-8 text-sm text-[#8c8780]">
+          ¿Necesitas más límites?
+        </div>
+      </div>
     </div>
   );
 }
