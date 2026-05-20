@@ -54,9 +54,19 @@ const INDUSTRIES = [
   { v: 'other', l: 'Otro' },
 ] as const;
 
-/** Auto-crop centrado a cuadrado + resize a 60x60 PNG. Apple Wallet espera el
- *  logo cuadrado pequeño; al recortar y reescalar al subir evitamos que el
- *  comercio mande imágenes raras que el pase rechace o renderice mal. */
+/** Auto-trim de bordes blancos/transparentes + ajuste a 60x60 PNG.
+ *
+ *  Pasos:
+ *   1. Detectar el bounding box del contenido real (descartar pixels casi
+ *      transparentes o casi blancos en los bordes).
+ *   2. "Contener" ese contenido en un cuadrado de 60x60 con fondo
+ *      transparente (la dimensión más larga llena el cuadro; la otra queda
+ *      centrada con padding transparente).
+ *   3. Exportar como PNG.
+ *
+ *  Apple Wallet le pone su marco blanco redondeado al icono — con
+ *  transparencia, el contenido cae limpio sobre ese marco.
+ */
 function resizeLogo(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return reject(new Error('no_image'));
@@ -66,18 +76,64 @@ function resizeLogo(file: File): Promise<string> {
       const img = new Image();
       img.onerror = () => reject(new Error('img_error'));
       img.onload = () => {
+        const probe = document.createElement('canvas');
+        probe.width = img.width;
+        probe.height = img.height;
+        const probeCtx = probe.getContext('2d');
+        if (!probeCtx) return reject(new Error('no_ctx'));
+        probeCtx.drawImage(img, 0, 0);
+
+        // Bounding box del contenido. Si la lectura de pixels falla
+        // (canvas tainted o similar), se usa la imagen completa.
+        let sx = 0;
+        let sy = 0;
+        let sw = img.width;
+        let sh = img.height;
+        try {
+          const data = probeCtx.getImageData(0, 0, img.width, img.height).data;
+          let minX = img.width;
+          let minY = img.height;
+          let maxX = -1;
+          let maxY = -1;
+          for (let y = 0; y < img.height; y++) {
+            for (let x = 0; x < img.width; x++) {
+              const i = (y * img.width + x) * 4;
+              const a = data[i + 3];
+              const isBg =
+                a < 10 ||
+                (a >= 250 && data[i] >= 245 && data[i + 1] >= 245 && data[i + 2] >= 245);
+              if (!isBg) {
+                if (x < minX) minX = x;
+                if (y < minY) minY = y;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+              }
+            }
+          }
+          if (maxX >= 0) {
+            sx = minX;
+            sy = minY;
+            sw = maxX - minX + 1;
+            sh = maxY - minY + 1;
+          }
+        } catch {
+          // tainted canvas: dejar bbox = imagen completa
+        }
+
         const SIDE = 60;
         const canvas = document.createElement('canvas');
         canvas.width = SIDE;
         canvas.height = SIDE;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('no_ctx'));
-        // cover-crop centrado: el lado menor de la fuente define el cuadrado
-        const src = Math.min(img.width, img.height);
-        const sx = (img.width - src) / 2;
-        const sy = (img.height - src) / 2;
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, sx, sy, src, src, 0, 0, SIDE, SIDE);
+        ctx.clearRect(0, 0, SIDE, SIDE); // fondo transparente
+        const scale = Math.min(SIDE / sw, SIDE / sh);
+        const dw = sw * scale;
+        const dh = sh * scale;
+        const dx = (SIDE - dw) / 2;
+        const dy = (SIDE - dh) / 2;
+        ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
         resolve(canvas.toDataURL('image/png'));
       };
       img.src = reader.result as string;
