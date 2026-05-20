@@ -2,30 +2,30 @@
 
 import { cn } from '@/lib/cn';
 import type { StampStyle } from '@/lib/api';
+import QrCode from '@/components/QrCode';
 
 export interface ApplePassPreviewProps {
   merchantName: string;
   /**
    * Color de FONDO del pase en hex (#rrggbb) — el que elige el comercio.
-   * NO es crema fija: crema solo si no hay color.
+   * Crema solo si no hay color.
    */
   bgColor?: string;
   /** Logo del comercio (data URL o http). */
   logoUrl?: string;
-  /** Estilo del sello del grid. Default: 'logo' si hay logo, si no 'disc'. */
+  /** Estilo del sello del grid. Default: 'disc' para imitar Apple. */
   stampStyle?: StampStyle;
   stampsRequired: number;
   rewardDetail: string;
   /** Sellos actuales. */
   stamps?: number;
+  /** Si está presente, se renderiza el QR real y un código hex abajo. */
+  qrValue?: string;
+  /** Código corto que Apple muestra debajo del QR. Si no, deriva del qrValue. */
+  qrAltText?: string;
   className?: string;
 }
 
-// WYSIWYG con api/src/lib/applePass.ts:
-//  - fondo = color elegido (crema rgb(247,246,243) solo como fallback)
-//  - texto/etiquetas = contraste calculado sobre el fondo
-//  - grid de sellos: lleno = forma elegida en tinta de contraste; vacío =
-//    anillo tenue de la misma tinta
 const CREAM = 'rgb(247, 246, 243)';
 
 function validHex(hex?: string): string | null {
@@ -42,13 +42,17 @@ function hexToRgb(hex: string): [number, number, number] {
   ];
 }
 
-/** Mismo umbral que contrastOn() del backend. */
 function contrastInk(rgb: [number, number, number]): string {
   const L = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
   return L > 0.62 ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)';
 }
 
-/** SVG de la forma del sello, replicando las primitivas del backend. */
+function deriveShortCode(value?: string): string | null {
+  if (!value) return null;
+  const hex = value.replace(/[^0-9a-fA-F]/g, '').slice(-8);
+  return hex.length >= 4 ? hex.toUpperCase() : null;
+}
+
 function StampShape({
   style,
   size,
@@ -121,7 +125,6 @@ function StampShape({
       </svg>
     );
   }
-  // disc + check (y fallback): círculo lleno + palomita en color de fondo.
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
       <circle cx={16} cy={16} r={15} fill={ink} />
@@ -145,6 +148,8 @@ export default function ApplePassPreview({
   stampsRequired,
   rewardDetail,
   stamps = 0,
+  qrValue,
+  qrAltText,
   className,
 }: ApplePassPreviewProps) {
   const hex = validHex(bgColor);
@@ -153,10 +158,9 @@ export default function ApplePassPreview({
   const ink = contrastInk(bgRgb);
   const ringColor = ink === 'rgb(17, 24, 39)' ? 'rgba(17,24,39,0.32)' : 'rgba(255,255,255,0.32)';
 
-  const effectiveStyle: StampStyle = stampStyle ?? (logoUrl ? 'logo' : 'disc');
+  const effectiveStyle: StampStyle = stampStyle ?? 'disc';
   const total = Math.max(1, stampsRequired);
   const filled = Math.min(Math.max(0, stamps), total);
-  const complete = stamps >= total;
 
   const cols = Math.min(5, total);
   const rows = Math.ceil(total / cols);
@@ -180,6 +184,8 @@ export default function ApplePassPreview({
   const tokenSize = total > 10 ? 30 : total > 5 ? 38 : 46;
   const stroke = Math.max(2, tokenSize * 0.07);
 
+  const shortCode = qrAltText ?? deriveShortCode(qrValue);
+
   return (
     <div className={cn('w-full max-w-[340px] select-none', className)}>
       <div
@@ -189,7 +195,7 @@ export default function ApplePassPreview({
         {/* Header: logo + nombre + SELLOS x/N */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-3">
           <div
-            className="h-9 w-9 shrink-0 overflow-hidden rounded-[8px] grid place-items-center text-[12px] font-bold"
+            className="h-10 w-10 shrink-0 overflow-hidden rounded-[8px] grid place-items-center text-[12px] font-bold"
             style={{ background: '#fff', color: '#111', boxShadow: `inset 0 0 0 1px ${ringColor}` }}
           >
             {logoUrl ? (
@@ -209,20 +215,17 @@ export default function ApplePassPreview({
             >
               Sellos
             </p>
-            <p className="text-[15px] font-semibold tabular-nums leading-tight">
+            <p className="text-[18px] font-semibold tabular-nums leading-tight">
               {filled}/{total}
             </p>
           </div>
         </div>
 
-        {/* STRIP: grid de sellos (réplica fiel de stampStripPng) */}
+        {/* STRIP: grid de sellos */}
         <div
           className="flex flex-col items-center justify-center gap-2.5 px-3"
           style={{ background: bg, minHeight: 132, paddingTop: 14, paddingBottom: 14 }}
         >
-          {complete ? (
-            <p className="text-[15px] font-semibold">¡Premio listo! 🎉</p>
-          ) : null}
           {tokenRows.map((row, ri) => (
             <div key={ri} className="flex justify-center gap-2.5">
               {row.map((idx) => {
@@ -261,10 +264,7 @@ export default function ApplePassPreview({
         </div>
 
         {/* secondary / auxiliary: TU PREMIO / NEGOCIO */}
-        <div
-          className="flex items-start justify-between gap-4 px-4 pt-3 pb-3"
-          style={{ borderTop: `1px solid ${ringColor}` }}
-        >
+        <div className="flex items-start justify-between gap-4 px-4 pt-3 pb-3">
           <div className="min-w-0">
             <p
               className="text-[8.5px] font-semibold uppercase tracking-[0.12em]"
@@ -285,25 +285,36 @@ export default function ApplePassPreview({
           </div>
         </div>
 
-        {/* Zona de barcode (placeholder QR) */}
-        <div className="flex justify-center bg-white px-4 py-4">
-          <div
-            className="grid place-items-center rounded-[6px]"
-            style={{
-              width: 92,
-              height: 92,
-              backgroundImage:
-                'repeating-conic-gradient(#111 0% 25%, #fff 0% 50%)',
-              backgroundSize: '14px 14px',
-              opacity: 0.85,
-            }}
-            aria-label="Código QR de la tarjeta"
-          />
+        {/* Zona de barcode: QR real con código hex abajo (igual a Apple Wallet) */}
+        <div className="flex justify-center px-4 pb-5 pt-1">
+          <div className="rounded-[8px] bg-white p-3 pb-2">
+            {qrValue ? (
+              <QrCode value={qrValue} size={132} fg="#0f0d0a" bg="#ffffff" />
+            ) : (
+              <div
+                className="grid place-items-center rounded-[4px]"
+                style={{
+                  width: 132,
+                  height: 132,
+                  backgroundImage:
+                    'repeating-conic-gradient(#111 0% 25%, #fff 0% 50%)',
+                  backgroundSize: '12px 12px',
+                  opacity: 0.85,
+                }}
+                aria-label="Vista previa del código QR"
+              />
+            )}
+            {shortCode && (
+              <p
+                className="mt-1 text-center font-mono text-[11px] tracking-[0.08em] text-gray-900"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
+              >
+                {shortCode}
+              </p>
+            )}
+          </div>
         </div>
       </div>
-      <p className="mt-2 text-center text-[11px] text-gray-400">
-        Vista fiel del pase real (Apple aplica color plano).
-      </p>
     </div>
   );
 }

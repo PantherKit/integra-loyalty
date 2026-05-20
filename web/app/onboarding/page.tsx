@@ -54,8 +54,9 @@ const INDUSTRIES = [
   { v: 'other', l: 'Otro' },
 ] as const;
 
-/** Redimensiona la imagen en el cliente a un cuadrado ~256px y la devuelve
- *  como data URL liviano (<~60KB). Evita subir archivos grandes a DynamoDB. */
+/** Auto-crop centrado a cuadrado + resize a 60x60 PNG. Apple Wallet espera el
+ *  logo cuadrado pequeño; al recortar y reescalar al subir evitamos que el
+ *  comercio mande imágenes raras que el pase rechace o renderice mal. */
 function resizeLogo(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return reject(new Error('no_image'));
@@ -65,20 +66,18 @@ function resizeLogo(file: File): Promise<string> {
       const img = new Image();
       img.onerror = () => reject(new Error('img_error'));
       img.onload = () => {
-        const S = 220;
+        const SIDE = 60;
         const canvas = document.createElement('canvas');
-        canvas.width = S;
-        canvas.height = S;
+        canvas.width = SIDE;
+        canvas.height = SIDE;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('no_ctx'));
-        // contain centrado sobre blanco
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, S, S);
-        const scale = Math.min(S / img.width, S / img.height);
-        const w = img.width * scale;
-        const h = img.height * scale;
-        ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
-        // PNG: Apple Wallet solo acepta PNG para las imágenes del pase.
+        // cover-crop centrado: el lado menor de la fuente define el cuadrado
+        const src = Math.min(img.width, img.height);
+        const sx = (img.width - src) / 2;
+        const sy = (img.height - src) / 2;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, sx, sy, src, src, 0, 0, SIDE, SIDE);
         resolve(canvas.toDataURL('image/png'));
       };
       img.src = reader.result as string;
