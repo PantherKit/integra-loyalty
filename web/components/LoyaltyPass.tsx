@@ -50,7 +50,7 @@ function shade(hex: string, amt: number): string {
 
 export default function LoyaltyPass({
   merchantName,
-  brandColor = '#4f46e5',
+  brandColor = '#4361ee',
   tagline,
   logoText,
   logoUrl,
@@ -88,7 +88,7 @@ export default function LoyaltyPass({
       <div
         className="relative rounded-[28px] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.45)] overflow-hidden"
         style={{
-          background: `linear-gradient(155deg, ${shade(brandColor, 18)} 0%, ${brandColor} 45%, ${shade(brandColor, -34)} 100%)`,
+          background: `linear-gradient(155deg, ${shade(brandColor, 12)} 0%, ${brandColor} 56%, ${shade(brandColor, -28)} 100%)`,
           color: fg,
         }}
       >
@@ -114,7 +114,7 @@ export default function LoyaltyPass({
             <header className="flex items-center gap-3">
               <div
                 className="h-12 w-12 shrink-0 overflow-hidden rounded-2xl grid place-items-center font-bold"
-                style={{ background: '#fff', color: brandColor }}
+                style={{ background: 'rgba(255,255,255,0.92)', color: brandColor }}
               >
                 {logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -219,7 +219,7 @@ export default function LoyaltyPass({
             <button
               type="button"
               onClick={() => setFlipped(true)}
-              className="absolute bottom-5 right-5 grid h-8 w-8 place-items-center rounded-full transition hover:scale-105"
+              className="absolute bottom-4 right-4 grid h-11 w-11 place-items-center rounded-full transition hover:scale-105"
               style={{ background: chipBg, color: fg }}
               aria-label="Ver detalles"
             >
@@ -266,7 +266,7 @@ export default function LoyaltyPass({
             <button
               type="button"
               onClick={() => setFlipped(false)}
-              className="absolute bottom-5 right-5 grid h-8 w-8 place-items-center rounded-full transition hover:scale-105"
+              className="absolute bottom-4 right-4 grid h-11 w-11 place-items-center rounded-full transition hover:scale-105"
               style={{ background: chipBg, color: fg }}
               aria-label="Ver frente"
             >
@@ -277,7 +277,7 @@ export default function LoyaltyPass({
       </div>
 
       {complete && variant === 'live' && (
-        <div className="mt-3 flex items-center gap-2 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 text-sm font-medium">
+        <div className="mt-3 flex items-center gap-2 rounded-2xl border border-warning/25 bg-warning/10 px-4 py-3 text-sm font-medium text-warning">
           <Sparkles size={16} /> Muestra esta tarjeta en el mostrador para
           canjear tu premio.
         </div>

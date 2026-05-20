@@ -14,6 +14,17 @@ import {
 } from 'lucide-react';
 import LoyaltyPass from '@/components/LoyaltyPass';
 import { useDashboard } from '@/components/dashboard-context';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_STAMPS_REQUIRED } from '@/lib/constants';
 import {
   getActivity,
@@ -107,177 +118,209 @@ export default function ResumenPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-gray-500">Resumen</p>
-          <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-gray-900">
-            Hola, {merchant?.name ?? 'comercio'}
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Aquí ves cómo va tu programa de lealtad hoy.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href="/dashboard/share/"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:border-gray-300"
-          >
-            <Share2 size={15} /> Compartir
-          </Link>
-          <Link
-            href="/dashboard/give-stamp/"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
-          >
-            <ScanLine size={15} /> Dar sello
-          </Link>
-        </div>
-      </header>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
+      <section className="min-w-0 space-y-4">
+        <header className="flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Resumen
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+              Hola, {merchant?.name ?? 'comercio'}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Operación del programa, actividad reciente y accesos de mostrador.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/share/">
+                <Share2 size={15} /> Compartir
+              </Link>
+            </Button>
+            <Button asChild variant="loyalty" size="sm">
+              <Link href="/dashboard/give-stamp/">
+                <ScanLine size={15} /> Dar sello
+              </Link>
+            </Button>
+          </div>
+        </header>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {KPIS.map((k) => {
-          const Icon = k.icon;
-          return (
-            <div
-              key={k.label}
-              className="rounded-xl border border-gray-200 bg-white p-4"
-            >
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-brand-50 text-brand-600">
-                <Icon size={18} />
-              </div>
-              <div className="mt-3 text-2xl font-semibold tracking-tight text-gray-900">
-                {loading ? '—' : k.value}
-              </div>
-              <div className="mt-0.5 text-xs text-gray-500">{k.label}</div>
-              <div className="truncate text-[11px] text-gray-400">{k.hint}</div>
+        <Card className="min-h-[560px]">
+          <CardHeader className="flex-row items-center justify-between space-y-0 border-b pb-3">
+            <div>
+              <CardTitle>Actividad</CardTitle>
+              <CardDescription>Últimas operaciones registradas.</CardDescription>
             </div>
-          );
-        })}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Feed de actividad */}
-        <section className="rounded-xl border border-gray-200 bg-white p-5 lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Actividad reciente</h2>
-            <button
+            <Button
               onClick={() => load(false)}
               disabled={refreshing || loading}
-              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 disabled:opacity-50"
+              variant="ghost"
+              size="sm"
             >
               <RefreshCw
                 size={12}
                 className={refreshing ? 'animate-spin' : ''}
               />
               {refreshing ? 'Actualizando…' : 'Actualizar'}
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="space-y-3">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-12 animate-pulse rounded-lg bg-gray-100"
-                />
-              ))}
-            </div>
-          ) : activity.length === 0 ? (
-            <div className="py-10 text-center">
-              <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-gray-100 text-gray-400">
-                <ScanLine size={20} />
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="space-y-2 p-3">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} className="h-11" />
+                ))}
               </div>
-              <p className="text-sm font-medium text-gray-700">
-                Aún no hay movimientos
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
-                Cuando le des un sello a un cliente, aparecerá aquí.
-              </p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {activity.map((t) => (
-                <li
-                  key={t.transactionId}
-                  className="flex items-center gap-3 py-3"
-                >
-                  <div
-                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
-                      t.kind === 'redeem'
-                        ? 'bg-amber-50 text-amber-700'
-                        : 'bg-green-50 text-green-700'
-                    }`}
+            ) : activity.length === 0 ? (
+              <div className="flex min-h-[480px] flex-col items-center justify-center px-4 text-center">
+                <div className="mb-3 grid h-9 w-9 place-items-center rounded-xl border bg-muted text-muted-foreground">
+                  <ScanLine size={16} />
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  Aún no hay movimientos
+                </p>
+                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                  Cuando registres un sello o un canje, aparecerá en esta lista.
+                </p>
+                <Button asChild variant="loyalty" size="sm" className="mt-4">
+                  <Link href="/dashboard/give-stamp/">
+                    <ScanLine size={15} /> Dar primer sello
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <ul className="divide-y">
+                {activity.map((t) => (
+                  <li
+                    key={t.transactionId}
+                    className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5"
                   >
-                    {t.kind === 'redeem' ? (
-                      <Gift size={16} />
-                    ) : (
-                      <Plus size={16} />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1 text-sm">
-                    {t.kind === 'stamp' ? (
-                      <p className="text-gray-800">
-                        +{t.amount} sello{t.amount > 1 ? 's' : ''} a{' '}
-                        <span className="font-medium">{t.customerPhone}</span>
+                    <div
+                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border ${
+                        t.kind === 'redeem'
+                          ? 'border-warning/20 bg-warning/5 text-warning'
+                          : 'border-success/20 bg-success/5 text-success'
+                      }`}
+                    >
+                      {t.kind === 'redeem' ? (
+                        <Gift size={14} />
+                      ) : (
+                        <Plus size={14} />
+                      )}
+                    </div>
+                    <div className="min-w-0 text-sm leading-tight">
+                      {t.kind === 'stamp' ? (
+                        <p className="truncate text-foreground">
+                          +{t.amount} sello{t.amount > 1 ? 's' : ''} a{' '}
+                          <span className="font-medium">{t.customerPhone}</span>
+                        </p>
+                      ) : (
+                        <p className="truncate text-foreground">
+                          Premio canjeado por{' '}
+                          <span className="font-medium">{t.customerPhone}</span>
+                        </p>
+                      )}
+                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                        {t.programName} · {t.stampsBefore} → {t.stampsAfter} sellos
                       </p>
-                    ) : (
-                      <p className="text-gray-800">
-                        Premio canjeado por{' '}
-                        <span className="font-medium">{t.customerPhone}</span>
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      {t.programName} · {t.stampsBefore} → {t.stampsAfter} sellos
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-xs text-gray-400">
-                    {formatRelative(t.createdAt)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                    </div>
+                    <Badge
+                      variant={t.kind === 'redeem' ? 'warning' : 'success'}
+                      className="font-mono"
+                    >
+                      {formatRelative(t.createdAt)}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </section>
 
-        {/* Preview de la tarjeta del comercio */}
-        <section className="space-y-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-1 font-semibold text-gray-900">Tu tarjeta</h2>
-            <p className="mb-4 text-xs text-gray-500">
-              Así la ve tu cliente en su celular.
-            </p>
-            <div className="flex justify-center">
-              <LoyaltyPass
-                variant="preview"
-                merchantName={merchant?.name ?? 'Tu comercio'}
-                brandColor={merchant?.brandColor ?? '#4f46e5'}
-                tagline={merchant?.industry}
-                logoUrl={merchant?.logoUrl}
-                programName={activeProgram?.name ?? 'Programa de lealtad'}
-                stampsRequired={activeProgram?.stampsRequired ?? DEFAULT_STAMPS_REQUIRED}
-                rewardDetail={
-                  activeProgram?.rewardDetail ?? 'Tu recompensa aquí'
-                }
-                stamps={0}
-              />
+      <aside className="space-y-3 lg:sticky lg:top-6 lg:self-start">
+        <Card>
+          <CardHeader className="border-b pb-3">
+            <CardTitle>Acciones rápidas</CardTitle>
+            <CardDescription>Para operar en mostrador.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 pt-3">
+            <Button asChild variant="loyalty" className="justify-start">
+              <Link href="/dashboard/give-stamp/">
+                <ScanLine size={15} /> Dar sello o canjear
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/dashboard/share/">
+                <Share2 size={15} /> Compartir QR y enlace
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="border-b pb-3">
+            <CardTitle>Indicadores</CardTitle>
+            <CardDescription>Actividad reciente del programa.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <dl className="divide-y">
+              {KPIS.map((k) => (
+                <div key={k.label} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <dt className="truncate text-xs font-medium text-muted-foreground">
+                      {k.label}
+                    </dt>
+                    <dd className="mt-0.5 truncate text-[11px] text-muted-foreground/70">
+                      {k.hint}
+                    </dd>
+                  </div>
+                  <dd className="font-mono text-lg font-semibold tabular-nums text-foreground">
+                    {loading ? '—' : k.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="border-b pb-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle>Tarjeta</CardTitle>
+                <CardDescription>Preview para clientes.</CardDescription>
+              </div>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/dashboard/share/" aria-label="Compartir tarjeta">
+                  <ArrowUpRight size={15} />
+                </Link>
+              </Button>
             </div>
-            <Link
-              href="/dashboard/share/"
-              className="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100"
-            >
-              Compartir con clientes
-              <ArrowUpRight size={15} />
-            </Link>
-          </div>
-        </section>
-      </div>
+          </CardHeader>
+          <CardContent className="pt-3">
+            <LoyaltyPass
+              variant="preview"
+              merchantName={merchant?.name ?? 'Tu comercio'}
+              brandColor={merchant?.brandColor ?? '#4361ee'}
+              tagline={merchant?.industry}
+              logoUrl={merchant?.logoUrl}
+              programName={activeProgram?.name ?? 'Programa de lealtad'}
+              stampsRequired={activeProgram?.stampsRequired ?? DEFAULT_STAMPS_REQUIRED}
+              rewardDetail={activeProgram?.rewardDetail ?? 'Tu recompensa aquí'}
+              stamps={0}
+              className="mx-auto max-w-[260px]"
+            />
+          </CardContent>
+        </Card>
+      </aside>
     </div>
   );
 }

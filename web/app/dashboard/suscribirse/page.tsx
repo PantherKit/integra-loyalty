@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Check, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
   startCheckout,
   getBillingStatus,
@@ -99,79 +103,84 @@ export default function SubscribePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <header>
-        <p className="text-xs uppercase tracking-wide text-gray-500">
+        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           Suscripción
         </p>
-        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-gray-900">
+        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-foreground">
           Elige tu plan
         </h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Sin contrato, cancela cuando quieras. Precios en pesos mexicanos
           (MXN), por mes.
         </p>
       </header>
 
       {returned === 'success' && (
-        <div className="flex items-start gap-2 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+        <Alert variant="success">
           <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
-          <span>
+          <AlertDescription>
             ¡Listo! Tu suscripción se está activando. Puede tardar unos segundos
             en reflejarse.
-          </span>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
       {returned === 'cancel' && (
-        <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <Alert variant="warning">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
-          <span>Cancelaste el pago. Puedes intentarlo cuando quieras.</span>
-        </div>
+          <AlertDescription>Cancelaste el pago. Puedes intentarlo cuando quieras.</AlertDescription>
+        </Alert>
       )}
 
       {status?.active && status.subscriptionStatus === 'active' && (
-        <div className="rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">
-          Tu suscripción está activa
-          {status.plan ? ` (plan ${status.plan})` : ''}.
-        </div>
+        <Alert variant="loyalty">
+          <AlertDescription>
+            Tu suscripción está activa
+            {status.plan ? ` (plan ${status.plan})` : ''}.
+          </AlertDescription>
+        </Alert>
       )}
 
       {error && (
-        <div className="flex items-start gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <Alert variant="destructive">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
-          <span>{error}</span>
-        </div>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
-      <div className="grid gap-6 md:grid-cols-3 items-start">
+      <div className="grid items-start gap-3 md:grid-cols-3">
         {PLANS.map((p) => (
-          <div
+          <Card
             key={p.plan}
-            className={`relative rounded-2xl border bg-white p-7 ${
+            className={`relative ${
               p.hot
-                ? 'border-brand-600 shadow-xl shadow-brand-600/10'
-                : 'border-gray-200'
+                ? 'border-brand-500 ring-1 ring-brand-500/40'
+                : ''
             }`}
           >
             {p.hot && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white">
+              <Badge variant="loyalty" className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-primary-foreground">
                 Más elegido
-              </span>
+              </Badge>
             )}
-            <p className="text-sm font-semibold text-gray-500">{p.name}</p>
-            <p className="mb-4 text-xs text-gray-400">{p.tagline}</p>
-            <p className="text-4xl font-semibold">
+            <CardHeader className="p-4 pb-0">
+            <p className="text-sm font-semibold text-muted-foreground">{p.name}</p>
+            <p className="mb-4 text-xs text-muted-foreground/70">{p.tagline}</p>
+            <p className="font-mono text-4xl font-semibold">
               {p.price}
-              <span className="text-base font-normal text-gray-400">
+              <span className="font-sans text-base font-normal text-muted-foreground">
                 {' '}
                 MXN/mes
               </span>
             </p>
+            </CardHeader>
+            <CardContent className="p-4 pt-4">
             <ul className="mt-5 space-y-2">
               {p.feats.map((f) => (
                 <li
                   key={f}
-                  className="flex items-start gap-2 text-sm text-gray-600"
+                  className="flex items-start gap-2 text-sm text-muted-foreground"
                 >
                   <Check
                     size={16}
@@ -181,18 +190,20 @@ export default function SubscribePage() {
                 </li>
               ))}
             </ul>
-            <button
+            <Button
               onClick={() => onSubscribe(p.plan)}
               disabled={busy !== null}
-              className={`mt-6 block w-full rounded-xl px-4 py-3 text-center font-medium disabled:opacity-50 ${
+              variant={p.hot ? 'loyalty' : 'outline'}
+              className={`mt-6 w-full ${
                 p.hot
-                  ? 'bg-brand-600 text-white hover:bg-brand-700'
-                  : 'border border-gray-300 text-gray-800 hover:bg-gray-50'
+                  ? ''
+                  : ''
               }`}
             >
               {busy === p.plan ? 'Redirigiendo…' : 'Suscribirme'}
-            </button>
-          </div>
+            </Button>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

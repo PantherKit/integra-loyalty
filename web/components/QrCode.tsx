@@ -22,7 +22,7 @@ export default function QrCode({
   value,
   size = 220,
   className,
-  fg = '#111827',
+  fg = '#0f0d0a',
   bg = '#ffffff',
 }: QrCodeProps) {
   const path = useMemo(() => {

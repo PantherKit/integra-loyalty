@@ -1,7 +1,20 @@
 import type { Metadata, Viewport } from 'next';
+import { JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import IntegraWatermark from '@/components/IntegraWatermark';
 import PwaRegister from '@/components/PwaRegister';
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Integra Loyalty — by Integra Group AI',
@@ -14,7 +27,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#4f46e5',
+  themeColor: '#0f0d0a',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -23,7 +36,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body className="min-h-screen flex flex-col">
+      <body className={`${plusJakarta.variable} ${jetBrainsMono.variable} min-h-screen flex flex-col bg-background font-sans text-foreground antialiased`}>
         {children}
         <IntegraWatermark />
         <PwaRegister />
