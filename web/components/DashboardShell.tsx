@@ -10,11 +10,22 @@ import {
   Share2,
   LogOut,
   Menu,
-  X,
   type LucideIcon,
 } from 'lucide-react';
 import IntegraLogo from '@/components/IntegraLogo';
 import { DashboardCtx } from '@/components/dashboard-context';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/cn';
 import {
   clearToken,
@@ -102,8 +113,8 @@ export default function DashboardShell({
   if (session.status === 'checking') {
     return (
       <main className="flex-1 grid place-items-center px-4">
-        <div className="flex flex-col items-center gap-3 text-gray-500">
-          <span className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-brand-600" />
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-brand-600" />
           <p className="text-sm">Verificando tu sesión…</p>
         </div>
       </main>
@@ -113,9 +124,11 @@ export default function DashboardShell({
   if (session.status === 'denied') {
     return (
       <main className="flex-1 grid place-items-center px-4">
-        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Tu sesión expiró. Redirigiéndote para iniciar sesión…
-        </div>
+        <Alert variant="destructive" className="max-w-sm">
+          <AlertDescription>
+            Tu sesión expiró. Redirigiéndote para iniciar sesión…
+          </AlertDescription>
+        </Alert>
       </main>
     );
   }
@@ -132,19 +145,16 @@ export default function DashboardShell({
   let trialBanner: React.ReactNode = null;
   if (billing && !billing.active) {
     trialBanner = (
-      <div className="border-b border-red-200 bg-red-50">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <p className="text-sm font-medium text-red-800">
+      <div className="border-b border-destructive/20 bg-background">
+        <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
+          <p className="text-sm font-medium text-destructive">
             {billing.subscriptionStatus === 'past_due'
               ? 'Tu pago no se procesó. Actualiza tu suscripción para seguir operando.'
               : 'Tu prueba terminó — Suscríbete para seguir dando sellos y creando programas.'}
           </p>
-          <Link
-            href="/dashboard/suscribirse/"
-            className="shrink-0 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-          >
-            Suscribirme
-          </Link>
+          <Button asChild size="sm" variant="destructive" className="shrink-0">
+            <Link href="/dashboard/suscribirse/">Suscribirme</Link>
+          </Button>
         </div>
       </div>
     );
@@ -155,21 +165,18 @@ export default function DashboardShell({
   ) {
     const d = daysLeft(billing.trialEndsAt);
     trialBanner = (
-      <div className="border-b border-amber-200 bg-amber-50">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
-          <p className="text-sm text-amber-800">
+      <div className="border-b border-warning/20 bg-background">
+        <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
+          <p className="text-sm text-warning">
             Te {d === 1 ? 'queda' : 'quedan'}{' '}
             <span className="font-semibold">
               {d} {d === 1 ? 'día' : 'días'}
             </span>{' '}
             de prueba gratis.
           </p>
-          <Link
-            href="/dashboard/suscribirse/"
-            className="shrink-0 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
-          >
-            Ver planes
-          </Link>
+          <Button asChild size="sm" variant="outline" className="shrink-0 border-warning/30 text-warning hover:bg-warning/10">
+            <Link href="/dashboard/suscribirse/">Ver planes</Link>
+          </Button>
         </div>
       </div>
     );
@@ -181,7 +188,7 @@ export default function DashboardShell({
       : pathname.startsWith(href.replace(/\/$/, ''));
 
   const navList = (
-    <nav className="flex flex-col gap-1">
+    <nav className="flex flex-col gap-0.5">
       {NAV.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.href);
@@ -190,14 +197,14 @@ export default function DashboardShell({
             key={item.href}
             href={item.href}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              'flex min-h-11 items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               active
-                ? 'bg-brand-50 text-brand-700'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-brand-50/90 text-brand-700'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             )}
             aria-current={active ? 'page' : undefined}
           >
-            <Icon size={18} className={active ? 'text-brand-600' : 'text-gray-400'} />
+            <Icon size={17} className={active ? 'text-brand-600' : 'text-muted-foreground'} />
             {item.label}
           </Link>
         );
@@ -206,15 +213,15 @@ export default function DashboardShell({
   );
 
   const brand = (
-    <div className="flex items-center gap-2.5">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">
+    <div className="flex min-w-0 items-center gap-2.5">
+      <span className="grid h-8 w-8 place-items-center rounded-xl border bg-card text-foreground">
         <IntegraLogo size={20} />
       </span>
       <div className="leading-tight">
         <p className="text-sm font-semibold tracking-tight">
           Integra <span className="text-brand-600">Loyalty</span>
         </p>
-        <p className="truncate text-[11px] text-gray-500 max-w-[140px]">
+        <p className="truncate text-[11px] text-muted-foreground max-w-[140px]">
           {merchant?.name ?? 'Tu comercio'}
         </p>
       </div>
@@ -223,76 +230,72 @@ export default function DashboardShell({
 
   return (
     <DashboardCtx.Provider value={{ email, merchant }}>
-      <div className="flex min-h-screen flex-1 bg-gray-50">
+      <div className="flex min-h-screen flex-1 bg-background">
         {/* Sidebar desktop */}
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white lg:flex">
-          <div className="border-b border-gray-100 px-5 py-5">{brand}</div>
-          <div className="flex-1 overflow-y-auto p-3">{navList}</div>
-          <div className="border-t border-gray-100 p-3">
-            <p className="truncate px-3 pb-2 text-xs text-gray-400">{email}</p>
-            <button
+        <aside className="hidden w-56 shrink-0 flex-col border-r bg-card lg:flex">
+          <div className="flex min-h-16 items-center px-4">{brand}</div>
+          <Separator />
+          <div className="flex-1 overflow-y-auto p-2">{navList}</div>
+          <Separator />
+          <div className="p-3">
+            <p className="truncate px-3 pb-2 text-xs text-muted-foreground">{email}</p>
+            <Button
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-700"
+              variant="ghost"
+              className="w-full justify-start gap-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
             >
-              <LogOut size={18} className="text-gray-400" />
+              <LogOut size={18} />
               Cerrar sesión
-            </button>
+            </Button>
           </div>
         </aside>
-
-        {/* Drawer móvil */}
-        {mobileOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <button
-              type="button"
-              aria-label="Cerrar menú"
-              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
-              onClick={() => setMobileOpen(false)}
-            />
-            <div className="absolute left-0 top-0 flex h-full w-72 flex-col bg-white shadow-2xl">
-              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-5">
-                {brand}
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  aria-label="Cerrar menú"
-                  className="text-gray-500 hover:text-gray-900"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3">{navList}</div>
-              <div className="border-t border-gray-100 p-3">
-                <p className="truncate px-3 pb-2 text-xs text-gray-400">{email}</p>
-                <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-700"
-                >
-                  <LogOut size={18} className="text-gray-400" />
-                  Cerrar sesión
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Contenido */}
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Topbar móvil */}
-          <header className="flex h-14 items-center gap-3 border-b border-gray-200 bg-white px-4 lg:hidden">
-            <button
-              onClick={() => setMobileOpen(true)}
-              aria-label="Abrir menú"
-              className="text-gray-600 hover:text-gray-900"
-            >
-              <Menu size={22} />
-            </button>
+          <header className="flex min-h-16 items-center gap-3 border-b bg-card px-4 lg:hidden">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Abrir menú">
+                  <Menu size={22} />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex w-72 flex-col p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Navegación del dashboard</SheetTitle>
+                  <SheetDescription>
+                    Menú principal de Integra Loyalty.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="px-5 py-5">{brand}</div>
+                <Separator />
+                <div className="flex-1 overflow-y-auto p-3">{navList}</div>
+                <Separator />
+                <div className="p-3">
+                  <p className="truncate px-3 pb-2 text-xs text-muted-foreground">
+                    {email}
+                  </p>
+                  <Button
+                    onClick={handleLogout}
+                    variant="ghost"
+                    className="w-full justify-start gap-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <LogOut size={18} />
+                    Cerrar sesión
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
             {brand}
+            <Badge variant="outline" className="ml-auto font-mono text-muted-foreground">
+              POC
+            </Badge>
           </header>
 
           {trialBanner}
 
           <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+            <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6">
               {children}
             </div>
           </main>

@@ -16,6 +16,11 @@ import {
 import LoyaltyPass from '@/components/LoyaltyPass';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useDashboard } from '@/components/dashboard-context';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { DEFAULT_STAMPS_REQUIRED } from '@/lib/constants';
 import {
   lookupCardsByPhone,
@@ -24,7 +29,7 @@ import {
   redeemCardApi,
   listMyPrograms,
   isSubscriptionRequired,
-  type Card,
+  type Card as LoyaltyCard,
   type LoyaltyProgram,
 } from '@/lib/api';
 
@@ -44,13 +49,13 @@ function GiveStampInner() {
   const [phone, setPhone] = useState('+52');
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [cards, setCards] = useState<Card[]>([]);
+  const [cards, setCards] = useState<LoyaltyCard[]>([]);
   const [programs, setPrograms] = useState<LoyaltyProgram[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [paywalled, setPaywalled] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [redeemTarget, setRedeemTarget] = useState<Card | null>(null);
+  const [redeemTarget, setRedeemTarget] = useState<LoyaltyCard | null>(null);
 
   useEffect(() => {
     listMyPrograms()
@@ -74,7 +79,7 @@ function GiveStampInner() {
       .finally(() => setSearching(false));
   }, [cardParam]);
 
-  function programOf(card: Card): LoyaltyProgram | undefined {
+  function programOf(card: LoyaltyCard): LoyaltyProgram | undefined {
     return programs.find((p) => p.programId === card.programId);
   }
 
@@ -140,32 +145,35 @@ function GiveStampInner() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
+    <div className="mx-auto max-w-xl space-y-4">
       <header>
-        <p className="text-xs uppercase tracking-wide text-gray-500">
+        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           Atención en mostrador
         </p>
-        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-gray-900">
+        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-foreground">
           Dar sello o canjear
         </h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Dale sello a la tarjeta del cliente o entrégale su premio.
         </p>
       </header>
 
       {cardParam ? (
-        <div className="flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700">
+        <Alert variant="loyalty">
           <CheckCircle2 size={16} className="shrink-0" />
-          Tarjeta cargada desde el QR del cliente. Solo dale “Dar sello”.
-        </div>
+          <AlertDescription>
+            Tarjeta cargada desde el QR del cliente. Solo dale “Dar sello”.
+          </AlertDescription>
+        </Alert>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-sm font-semibold text-gray-900">
-            Cómo dar un sello
-          </p>
-          <ol className="mt-3 space-y-2.5 text-sm text-gray-700">
+        <Card>
+          <CardHeader className="border-b pb-3">
+            <CardTitle className="text-base">Cómo dar un sello</CardTitle>
+          </CardHeader>
+          <CardContent>
+          <ol className="space-y-2.5 text-sm text-foreground">
             <li className="flex gap-2">
-              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-lg border bg-background text-xs font-medium text-muted-foreground">
                 1
               </span>
               Pídele al cliente que abra su tarjeta y te muestre su{' '}
@@ -175,7 +183,7 @@ function GiveStampInner() {
               .
             </li>
             <li className="flex gap-2">
-              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-lg border bg-background text-xs font-medium text-muted-foreground">
                 2
               </span>
               <span className="inline-flex items-center gap-1">
@@ -184,97 +192,97 @@ function GiveStampInner() {
               — se abre aquí con su tarjeta lista.
             </li>
             <li className="flex gap-2">
-              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-lg border bg-background text-xs font-medium text-muted-foreground">
                 3
               </span>
               Toca <span className="font-medium">“Dar sello”</span>. Su tarjeta
               se actualiza sola.
             </li>
           </ol>
-          <p className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-500">
+          <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">
             ¿No trae el QR a la mano? Búscalo por su teléfono abajo.
           </p>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       <form
         onSubmit={onSearch}
-        className="rounded-xl border border-gray-200 bg-white p-5"
+        className="rounded-2xl border bg-card p-4 text-card-foreground"
       >
-        <label className="block">
-          <span className="text-sm font-medium text-gray-700">
-            Teléfono del cliente
-          </span>
-          <div className="mt-1.5 flex gap-2">
-            <input
+        <div>
+          <Label htmlFor="customer-phone">Teléfono del cliente</Label>
+          <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+            <Input
+              id="customer-phone"
               required
               type="tel"
               inputMode="tel"
               pattern="^\+\d{10,15}$"
+              aria-describedby="customer-phone-help"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+5219991234567"
-              className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2.5 outline-none focus:border-brand-500"
+              className="min-w-0 flex-1"
             />
-            <button
+            <Button
               type="submit"
               disabled={searching}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+              variant="loyalty"
+              className="shrink-0"
             >
               <Search size={15} /> {searching ? 'Buscando…' : 'Buscar'}
-            </button>
+            </Button>
           </div>
-        </label>
-        <span className="mt-1.5 block text-xs text-gray-500">
+        </div>
+        <span id="customer-phone-help" className="mt-1.5 block text-xs text-muted-foreground">
           Formato internacional con +52 y sin espacios.
         </span>
       </form>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <Alert variant="destructive">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
-          <div className="space-y-2">
+          <AlertDescription className="space-y-2">
             <span>{error}</span>
             {paywalled && (
               <div>
-                <Link
-                  href="/dashboard/suscribirse/"
-                  className="inline-block rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
-                >
-                  Ver planes y suscribirme
-                </Link>
+                <Button asChild size="sm" variant="destructive">
+                  <Link href="/dashboard/suscribirse/">
+                    Ver planes y suscribirme
+                  </Link>
+                </Button>
               </div>
             )}
-          </div>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
       {notice && (
-        <div className="flex items-start gap-2 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+        <Alert variant="success">
           <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
-          <span>{notice}</span>
-        </div>
+          <AlertDescription>{notice}</AlertDescription>
+        </Alert>
       )}
 
       {searched && cards.length === 0 && !error && (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-gray-100 text-gray-400">
+        <Card>
+          <CardContent className="p-6 text-center">
+          <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-xl bg-muted text-muted-foreground">
             <ScanLine size={20} />
           </div>
-          <p className="text-sm font-medium text-gray-700">
+          <p className="text-sm font-medium text-foreground">
             Sin tarjetas para este teléfono
           </p>
-          <p className="mx-auto mt-1 max-w-xs text-sm text-gray-500">
+          <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
             Pídele al cliente que se registre escaneando tu código QR o abriendo
             tu enlace público.
           </p>
-          <Link
-            href="/dashboard/share/"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-100"
-          >
-            Ver cómo compartir
-          </Link>
-        </div>
+            <Button asChild variant="outline" className="mt-4">
+            <Link href="/dashboard/share/">Ver cómo compartir</Link>
+          </Button>
+          </CardContent>
+        </Card>
       )}
 
       {cards.length > 0 && (
@@ -291,7 +299,7 @@ function GiveStampInner() {
                   <LoyaltyPass
                     variant="live"
                     merchantName={merchant?.name ?? 'Tu comercio'}
-                    brandColor={merchant?.brandColor ?? '#4f46e5'}
+                    brandColor={merchant?.brandColor ?? '#4361ee'}
                     tagline={merchant?.industry}
                     logoUrl={merchant?.logoUrl}
                     programName={program?.name ?? 'Programa de lealtad'}
@@ -304,27 +312,29 @@ function GiveStampInner() {
                 </div>
 
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={() => onStamp(card.cardId)}
                     disabled={isBusy || complete}
-                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-3 py-3 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                    variant="loyalty"
+                    className="h-12 flex-1"
                   >
                     <Plus size={16} />
                     {isBusy && !redeemTarget ? 'Sellando…' : 'Dar sello'}
-                  </button>
+                  </Button>
                   {complete && (
-                    <button
+                    <Button
                       onClick={() => setRedeemTarget(card)}
                       disabled={isBusy}
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 py-3 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+                      variant="warning"
+                      className="h-12 flex-1"
                     >
                       <Gift size={16} /> Canjear premio
-                    </button>
+                    </Button>
                   )}
                 </div>
 
                 {complete && (
-                  <p className="text-center text-xs text-gray-500">
+                  <p className="text-center text-xs text-muted-foreground">
                     La tarjeta está completa. Al canjear, los sellos se
                     reinician.
                   </p>
@@ -342,7 +352,7 @@ function GiveStampInner() {
           redeemTarget
             ? `Vas a entregar la recompensa a ${
                 redeemTarget.customerPhone ?? 'este cliente'
-              }. Esta acción reinicia los sellos de su tarjeta y no se puede deshacer.`
+              }. Confirma solo cuando ya tengas el premio listo: esta acción reinicia los sellos y no se puede deshacer.`
             : undefined
         }
         confirmLabel="Sí, canjear"
@@ -361,7 +371,7 @@ function GiveStampInner() {
 export default function GiveStampPage() {
   return (
     <Suspense
-      fallback={<div className="text-sm text-gray-500">Cargando…</div>}
+      fallback={<div className="text-sm text-muted-foreground">Cargando…</div>}
     >
       <GiveStampInner />
     </Suspense>
