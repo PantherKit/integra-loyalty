@@ -70,14 +70,14 @@ function StampShape({
   if (style === 'logo' && logoUrl) {
     return (
       <div
-        className="overflow-hidden rounded-full"
+        className="grid place-items-center overflow-hidden rounded-full"
         style={{ width: size, height: size }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={logoUrl}
           alt=""
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
           aria-hidden
         />
       </div>
@@ -195,12 +195,16 @@ export default function ApplePassPreview({
         {/* Header: logo + nombre + SELLOS x/N */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-3">
           <div
-            className="h-10 w-10 shrink-0 overflow-hidden rounded-[8px] grid place-items-center text-[12px] font-bold"
+            className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-[8px] text-[12px] font-bold"
             style={{ background: '#fff', color: '#111', boxShadow: `inset 0 0 0 1px ${ringColor}` }}
           >
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={merchantName} className="h-full w-full object-cover" />
+              <img
+                src={logoUrl}
+                alt={merchantName}
+                className="h-full w-full object-contain p-[3px]"
+              />
             ) : (
               <span>{initials}</span>
             )}

@@ -233,13 +233,22 @@ export default function OnboardingPage() {
                   </Field>
                   <Field label="Logo del negocio (opcional)">
                     <div className="flex items-center gap-3">
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 grid place-items-center">
+                      <div
+                        className="h-16 w-16 shrink-0 grid place-items-center overflow-hidden rounded-2xl border border-gray-200"
+                        style={{
+                          backgroundImage: logoUrl
+                            ? 'conic-gradient(#e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)'
+                            : undefined,
+                          backgroundColor: logoUrl ? undefined : '#f9fafb',
+                          backgroundSize: '10px 10px',
+                        }}
+                      >
                         {logoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={logoUrl}
                             alt="logo"
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain p-1"
                           />
                         ) : (
                           <span className="text-xs text-gray-400">Sin logo</span>
@@ -358,7 +367,7 @@ export default function OnboardingPage() {
                               <img
                                 src={logoUrl}
                                 alt=""
-                                className="h-4 w-4 rounded-full object-cover"
+                                className="h-4 w-4 rounded-full object-contain"
                                 aria-hidden
                               />
                             ) : (
