@@ -1,0 +1,108 @@
+{
+  "formatVersion": 1,
+  "passTypeIdentifier": "PLACEHOLDER",
+  "teamIdentifier": "PLACEHOLDER",
+  "organizationName": "Integra Group AI",
+  "serialNumber": "demo-001",
+  "description": "Tarjeta de Lealtad Digital",
+
+  "foregroundColor": "rgb(57, 109, 234)",
+  "backgroundColor": "rgb(255, 254, 249)",
+  "labelColor": "rgb(57, 109, 234)",
+  "logoText": "MARQUESITAS OMO",
+
+  "barcodes": [
+    {
+      "message": "INTEGRA-DEMO-001",
+      "format": "PKBarcodeFormatCode128",
+      "messageEncoding": "iso-8859-1",
+      "altText": "Powered by Integra Lealtad"
+    }
+  ],
+
+  "storeCard": {
+    "headerFields": [
+      {
+        "key": "tier",
+        "label": "NIVEL",
+        "value": "Gold"
+      }
+    ],
+    "primaryFields": [
+      {
+        "key": "stamps",
+        "label": "SELLOS ACUMULADOS",
+        "value": "6 / 8",
+        "changeMessage": "Ahora tienes %@ sellos"
+      }
+    ],
+    "secondaryFields": [
+      {
+        "key": "stamps_to_reward",
+        "label": "USA LOS SELLOS HASTA...",
+        "value": "3 sellos",
+        "changeMessage": "Te faltan %@ para tu próximo premio"
+      },
+      {
+        "key": "prizes",
+        "label": "RECOMPENSAS DISPONIBLES",
+        "value": "0 premios"
+      }
+    ],
+    "backFields": [
+      {
+        "key": "merchant_name",
+        "label": "Comercio",
+        "value": "Marquesitas OMO"
+      },
+      {
+        "key": "member",
+        "label": "Miembro",
+        "value": "Juan García"
+      },
+      {
+        "key": "since",
+        "label": "Miembro desde",
+        "value": "Ene 2024"
+      },
+      {
+        "key": "tier_back",
+        "label": "Nivel",
+        "value": "Gold"
+      },
+      {
+        "key": "merchant_addr",
+        "label": "Dirección",
+        "value": "Orizaba 161, Roma Norte, CDMX"
+      },
+      {
+        "key": "member_id",
+        "label": "ID de Membresía",
+        "value": "DEMO-001"
+      },
+      {
+        "key": "promo",
+        "label": "Promoción Activa",
+        "value": "2x puntos este fin de semana"
+      },
+      {
+        "key": "terms",
+        "label": "Términos y Condiciones",
+        "value": "Los puntos son canjeables en cualquier sucursal participante. Vigencia 12 meses desde la última transacción. Sujeto a disponibilidad."
+      },
+      {
+        "key": "support",
+        "label": "Soporte",
+        "value": "soporte@integra-group.ai"
+      }
+    ]
+  },
+
+  "locations": [
+    {
+      "longitude": -99.1566,
+      "latitude": 19.4194,
+      "relevantText": "¡Estás cerca de Marquesitas OMO! Gana el doble de sellos hoy."
+    }
+  ]
+}

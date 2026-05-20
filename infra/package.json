@@ -1,0 +1,30 @@
+{
+  "name": "integra-loyalty-infra",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "infra": "bin/app.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "echo \"no tests yet\"",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "diff:dev": "cdk diff IntegraLoyalty-dev",
+    "deploy:dev": "cdk deploy IntegraLoyalty-dev --require-approval never",
+    "destroy:dev": "cdk destroy IntegraLoyalty-dev",
+    "lint": "echo \"lint placeholder — agregar eslint cuando se necesite\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "aws-cdk": "^2.150.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.150.0",
+    "constructs": "^10.3.0",
+    "esbuild": "^0.28.0"
+  }
+}

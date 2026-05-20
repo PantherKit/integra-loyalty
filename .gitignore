@@ -9,6 +9,13 @@ out/
 build/
 dist/
 
+# CDK
+cdk.out/
+.cdk.staging/
+
+# Cache
+.cache/
+
 # Environment
 .env
 .env.local
