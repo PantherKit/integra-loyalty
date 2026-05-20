@@ -18,6 +18,56 @@ interface DragState {
   startCrop: Crop;
 }
 
+/** Detecta el color de fondo (sampleando las 4 esquinas) y lo reemplaza por
+ *  transparente, con feathering en los bordes anti-aliased para no dejar
+ *  sierra. Si las esquinas no son uniformes, no toca nada (fondo coloreado
+ *  intencional). */
+function keyOutBackground(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  let imageData: ImageData;
+  try {
+    imageData = ctx.getImageData(0, 0, w, h);
+  } catch {
+    return;
+  }
+  const data = imageData.data;
+  const px = (x: number, y: number): readonly [number, number, number, number] => {
+    const i = (y * w + x) * 4;
+    return [data[i], data[i + 1], data[i + 2], data[i + 3]] as const;
+  };
+  const corners = [px(0, 0), px(w - 1, 0), px(0, h - 1), px(w - 1, h - 1)];
+  const allTransparent = corners.every(([, , , a]) => a < 32);
+  if (allTransparent) return;
+  const [r0, g0, b0, a0] = corners[0];
+  const uniform =
+    a0 >= 180 &&
+    corners.every(
+      ([r, g, b, a]) =>
+        a >= 180 &&
+        Math.abs(r - r0) <= 18 &&
+        Math.abs(g - g0) <= 18 &&
+        Math.abs(b - b0) <= 18,
+    );
+  if (!uniform) return;
+
+  const FULL_BG = 14;
+  const FULL_FG = 44;
+  const RANGE = FULL_FG - FULL_BG;
+  for (let i = 0; i < data.length; i += 4) {
+    const dr = Math.abs(data[i] - r0);
+    const dg = Math.abs(data[i + 1] - g0);
+    const db = Math.abs(data[i + 2] - b0);
+    const diff = Math.max(dr, dg, db);
+    if (diff <= FULL_BG) {
+      data[i + 3] = 0;
+    } else if (diff < FULL_FG) {
+      // feather: alpha proporcional al alejamiento del color de fondo
+      const t = (diff - FULL_BG) / RANGE;
+      data[i + 3] = Math.round(data[i + 3] * t);
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
 export interface LogoCropperProps {
   /** Data URL del archivo subido por el usuario. */
   src: string;
@@ -87,6 +137,7 @@ export default function LogoCropper({
       canvas.width,
       canvas.height,
     );
+    keyOutBackground(ctx, canvas.width, canvas.height);
   }, [crop]);
 
   // Listeners de drag a nivel documento (más robusto que en el div).
@@ -193,6 +244,7 @@ export default function LogoCropper({
       outputSize,
       outputSize,
     );
+    keyOutBackground(ctx, outputSize, outputSize);
     onConfirm(canvas.toDataURL('image/png'));
   }
 
@@ -210,7 +262,9 @@ export default function LogoCropper({
         <header>
           <h3 className="text-base font-semibold text-gray-900">Ajusta tu logo</h3>
           <p className="mt-0.5 text-xs text-gray-500">
-            Arrastra el cuadrado para encuadrar lo que se va a mostrar en Apple Wallet.
+            Arrastra el cuadrado para encuadrar. El fondo blanco se hace
+            transparente automáticamente para que no salga el cuadro blanco
+            en Apple Wallet.
           </p>
         </header>
 
@@ -264,7 +318,15 @@ export default function LogoCropper({
 
           <div className="flex flex-col items-center gap-2 shrink-0">
             <p className="text-[10px] uppercase tracking-widest text-gray-500">Preview</p>
-            <div className="rounded-lg bg-gray-100 p-2 ring-1 ring-gray-200">
+            <div
+              className="rounded-lg p-2 ring-1 ring-gray-200"
+              style={{
+                backgroundImage:
+                  'conic-gradient(#e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)',
+                backgroundSize: '12px 12px',
+              }}
+              title="El cuadrado a cuadros = fondo transparente"
+            >
               <canvas
                 ref={previewRef}
                 width={outputSize}
