@@ -94,7 +94,7 @@ void main() {
   float height = snoise(vec2(uv.x * 0.8 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
   height = exp(height) * 0.8;
   height = (uv.y * 1.2 - height - 0.5);
-  
+
   // Añadimos un valor base (0.3) a la intensidad para que NUNCA llegue a 0 (huecos blancos)
   float intensity = 0.5 * height + 0.3;
 

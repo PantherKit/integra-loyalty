@@ -220,18 +220,18 @@ export default function Home() {
           <div className="hero-card relative min-w-0 flex items-start justify-end">
             {/* Contenedor del Ramo */}
             <div className="relative w-full max-w-[26rem] aspect-[4/5] mr-4 lg:mr-12">
-              
+
               {/* Mockup 2: Izquierda (Detrás) */}
               {/* Añadimos z-10 y hover:z-30 para que al pasar el mouse salte al frente. Usamos group-hover o hover normal */}
               <div className="absolute left-[-22%] top-20 w-[75%] -rotate-[16deg] transition-all duration-700 ease-out hover:-rotate-6 hover:scale-105 hover:z-30 z-10">
                 <div className="animate-float-slow">
-                  <Image 
-                    src="/MockUp02.png" 
-                    alt="Google Wallet" 
-                    width={500} 
-                    height={1000} 
-                    priority 
-                    className="h-auto w-full drop-shadow-[0_20px_40px_rgba(15,13,10,0.15)]" 
+                  <Image
+                    src="/MockUp02.png"
+                    alt="Google Wallet"
+                    width={500}
+                    height={1000}
+                    priority
+                    className="h-auto w-full drop-shadow-[0_20px_40px_rgba(15,13,10,0.15)]"
                   />
                 </div>
               </div>
@@ -239,13 +239,13 @@ export default function Home() {
               {/* Mockup 3: Derecha (Detrás) */}
               <div className="absolute right-[-22%] top-24 w-[75%] rotate-[16deg] transition-all duration-700 ease-out hover:rotate-6 hover:scale-105 hover:z-30 z-10">
                 <div className="animate-float-slower">
-                  <Image 
-                    src="/MockUp03.png" 
-                    alt="Notificación Geofence" 
-                    width={500} 
-                    height={1000} 
-                    priority 
-                    className="h-auto w-full drop-shadow-[0_20px_40px_rgba(15,13,10,0.15)]" 
+                  <Image
+                    src="/MockUp03.png"
+                    alt="Notificación Geofence"
+                    width={500}
+                    height={1000}
+                    priority
+                    className="h-auto w-full drop-shadow-[0_20px_40px_rgba(15,13,10,0.15)]"
                   />
                 </div>
               </div>
@@ -253,13 +253,13 @@ export default function Home() {
               {/* Mockup 1: Centro (Frente) */}
               <div className="absolute inset-x-[5%] top-0 transition-all duration-700 ease-out hover:scale-105 z-20">
                 <div className="animate-float-slowest">
-                  <Image 
-                    src="/MockUp01.png" 
-                    alt="Apple Wallet Pass" 
-                    width={500} 
-                    height={1000} 
-                    priority 
-                    className="h-auto w-full drop-shadow-[0_30px_60px_rgba(15,13,10,0.25)]" 
+                  <Image
+                    src="/MockUp01.png"
+                    alt="Apple Wallet Pass"
+                    width={500}
+                    height={1000}
+                    priority
+                    className="h-auto w-full drop-shadow-[0_30px_60px_rgba(15,13,10,0.25)]"
                   />
                 </div>
               </div>
@@ -359,7 +359,7 @@ export default function Home() {
               14 días gratis. Sin tarjeta de crédito. Los planes quedan como soporte comercial, no como el centro del mensaje.
             </p>
           </div>
-          
+
           <div className="grid gap-8 lg:grid-cols-3">
             {PLANS.map((plan, index) => (
               <PlanCard
@@ -531,18 +531,18 @@ function PlanCard({
     >
       {/* ── CONTORNO GLOW ELEGANTE (Hover) ── */}
       <div className="pointer-events-none absolute inset-0 z-20 opacity-0 transition-opacity duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100">
-        <div 
-          className="absolute inset-0 rounded-[2.5rem] border-[1.5px] border-accent-500/50" 
-          style={{ 
-            maskImage: 'linear-gradient(to bottom, black 0%, transparent 60%)', 
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 60%)' 
-          }} 
+        <div
+          className="absolute inset-0 rounded-[2.5rem] border-[1.5px] border-accent-500/50"
+          style={{
+            maskImage: 'linear-gradient(to bottom, black 0%, transparent 60%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 60%)'
+          }}
         />
       </div>
 
       {/* ── HEADER CON AURORA ── */}
       <div className="relative overflow-hidden rounded-[2.25rem] bg-paper-50 px-8 pb-8 pt-10">
-        
+
         {/* Glows difusos en el fondo del header (dependen del plan) */}
         <div className="pointer-events-none absolute inset-0 opacity-80 mix-blend-multiply">
           {name === 'Starter' && (
@@ -583,7 +583,7 @@ function PlanCard({
               {name}
             </h3>
           </div>
-          
+
           <div className="mt-2 flex items-baseline gap-3">
             <span className="text-6xl font-bold tracking-tighter text-ink-900">{price}</span>
             <div className="flex flex-col text-xs font-medium leading-tight text-[#8c8780]">
@@ -615,10 +615,10 @@ function PlanCard({
             const isTodoFeature = feature.startsWith('Todo lo de');
             return (
               <li key={feature} className="flex items-start gap-3">
-                <Check 
-                  size={18} 
-                  strokeWidth={2.5} 
-                  className={cn("mt-0.5 shrink-0", isTodoFeature ? "text-accent-500" : "text-ink-900")} 
+                <Check
+                  size={18}
+                  strokeWidth={2.5}
+                  className={cn("mt-0.5 shrink-0", isTodoFeature ? "text-accent-500" : "text-ink-900")}
                 />
                 <span className={cn(
                   "leading-relaxed",
