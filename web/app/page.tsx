@@ -136,7 +136,38 @@ export default function Home() {
         <div className="relative mx-auto grid min-h-dvh max-w-7xl items-start gap-16 px-4 pb-20 pt-32 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-32 lg:px-8 lg:pb-28 lg:pt-40">
           <div className="lg:pt-32">
             <h1 className="hero-1 max-w-4xl text-[3.4rem] font-bold leading-[0.95] tracking-[-0.025em] text-ink-900 sm:text-6xl lg:text-[5.5rem]">
-              Lealtad sin app, lista para operar.
+              <span className="relative inline-block mb-[0.25em]">
+                Lealtad
+                {/* Wrapper que ejecuta el clip-path reveal — el SVG queda libre para sangrar */}
+                <div
+                  className="animate-draw-line pointer-events-none absolute -bottom-[0.68em] left-0 -z-10 h-[1.1em] w-full overflow-hidden"
+                >
+                  <svg
+                    className="absolute left-0 top-[0.34em] h-[0.48em] w-full text-accent-500"
+                    viewBox="0 0 200 56"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                    style={{ overflow: 'visible' }}
+                  >
+                    <defs>
+                      <filter id="marker-noise" x="-20%" y="-20%" width="140%" height="140%">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+                      </filter>
+                    </defs>
+                    <path
+                      d="M 2 38 Q 100 10 198 38"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      filter="url(#marker-noise)"
+                    />
+                  </svg>
+                </div>
+              </span>{' '}
+              sin app, lista para operar.
             </h1>
             <p className="hero-2 mt-7 max-w-xl text-lg leading-[1.7] text-[#5a5450]">
               Integra Loyalty convierte un programa de sellos en una tarjeta viva de Apple Wallet y Google Wallet, con alta por QR, actualizaciones nativas y métricas desde el primer piloto.

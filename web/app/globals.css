@@ -156,6 +156,17 @@ body {
 .stagger-5 { transition-delay: 0.40s; }
 .stagger-6 { transition-delay: 0.48s; }
 
+/* ── Especiales ─────────────────────────────────────────── */
+@keyframes reveal-right {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+.animate-draw-line {
+  /* Retraso de 450ms para que se dibuje justo después de que la palabra "Lealtad" aparece */
+  animation: reveal-right 0.8s var(--ease-out-expo) 0.45s both;
+}
+
 /* Scroll reveal — activado solo cuando JS inicializa (.js-motion-ready)
    garantiza que sin JS todos los elementos sean visibles */
 .js-motion-ready .reveal {
