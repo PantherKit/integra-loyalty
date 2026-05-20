@@ -91,18 +91,55 @@ function resizeLogo(file: File): Promise<string> {
         let sh = img.height;
         try {
           const data = probeCtx.getImageData(0, 0, img.width, img.height).data;
-          let minX = img.width;
-          let minY = img.height;
+          const w = img.width;
+          const h = img.height;
+          const px = (x: number, y: number) => {
+            const i = (y * w + x) * 4;
+            return [data[i], data[i + 1], data[i + 2], data[i + 3]] as const;
+          };
+          // Sample de las 4 esquinas para detectar el color de fondo real.
+          // Si las 4 son similares, ese es el fondo (sea blanco, crema, gris…).
+          const corners = [
+            px(0, 0),
+            px(w - 1, 0),
+            px(0, h - 1),
+            px(w - 1, h - 1),
+          ];
+          const allTransparent = corners.every(([, , , a]) => a < 32);
+          let bgColor: readonly [number, number, number, number] | null = null;
+          if (!allTransparent) {
+            const [r0, g0, b0, a0] = corners[0];
+            const allSimilar =
+              a0 >= 180 &&
+              corners.every(
+                ([r, g, b, a]) =>
+                  a >= 180 &&
+                  Math.abs(r - r0) <= 18 &&
+                  Math.abs(g - g0) <= 18 &&
+                  Math.abs(b - b0) <= 18,
+              );
+            if (allSimilar) bgColor = corners[0];
+          }
+          const isBg = (r: number, g: number, b: number, a: number) => {
+            if (a < 28) return true;
+            if (bgColor) {
+              const [r0, g0, b0] = bgColor;
+              return (
+                Math.abs(r - r0) <= 22 &&
+                Math.abs(g - g0) <= 22 &&
+                Math.abs(b - b0) <= 22
+              );
+            }
+            return a >= 180 && r >= 232 && g >= 232 && b >= 232;
+          };
+          let minX = w;
+          let minY = h;
           let maxX = -1;
           let maxY = -1;
-          for (let y = 0; y < img.height; y++) {
-            for (let x = 0; x < img.width; x++) {
-              const i = (y * img.width + x) * 4;
-              const a = data[i + 3];
-              const isBg =
-                a < 10 ||
-                (a >= 250 && data[i] >= 245 && data[i + 1] >= 245 && data[i + 2] >= 245);
-              if (!isBg) {
+          for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+              const i = (y * w + x) * 4;
+              if (!isBg(data[i], data[i + 1], data[i + 2], data[i + 3])) {
                 if (x < minX) minX = x;
                 if (y < minY) minY = y;
                 if (x > maxX) maxX = x;
