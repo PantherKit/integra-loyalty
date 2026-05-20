@@ -22,6 +22,7 @@ import {
   type StampStyle,
 } from '@/lib/api';
 import ApplePassPreview from '@/components/ApplePassPreview';
+import LogoCropper from '@/components/LogoCropper';
 import QrCode from '@/components/QrCode';
 import { cn } from '@/lib/cn';
 
@@ -54,35 +55,14 @@ const INDUSTRIES = [
   { v: 'other', l: 'Otro' },
 ] as const;
 
-/** Redimensiona la imagen en el cliente a un cuadrado ~256px y la devuelve
- *  como data URL liviano (<~60KB). Evita subir archivos grandes a DynamoDB. */
-function resizeLogo(file: File): Promise<string> {
+/** Lee un File como data URL (PNG/JPG). Lo pasamos al cropper, que es el que
+ *  decide el recorte final y produce el 60x60 que se guarda. */
+function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return reject(new Error('no_image'));
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('read_error'));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('img_error'));
-      img.onload = () => {
-        const S = 220;
-        const canvas = document.createElement('canvas');
-        canvas.width = S;
-        canvas.height = S;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('no_ctx'));
-        // contain centrado sobre blanco
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, S, S);
-        const scale = Math.min(S / img.width, S / img.height);
-        const w = img.width * scale;
-        const h = img.height * scale;
-        ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
-        // PNG: Apple Wallet solo acepta PNG para las imágenes del pase.
-        resolve(canvas.toDataURL('image/png'));
-      };
-      img.src = reader.result as string;
-    };
+    reader.onload = () => resolve(reader.result as string);
     reader.readAsDataURL(file);
   });
 }
@@ -96,6 +76,7 @@ export default function OnboardingPage() {
   const [color, setColor] = useState(COLORS[0]);
   const [logoText, setLogoText] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
+  const [pendingLogoSrc, setPendingLogoSrc] = useState<string | null>(null);
   // null = sin elección explícita → default dinámico ('logo' si hay logo, si no 'disc').
   const [stampPick, setStampPick] = useState<StampStyle | null>(null);
   const stampStyle: StampStyle = stampPick ?? (logoUrl ? 'logo' : 'disc');
@@ -252,13 +233,22 @@ export default function OnboardingPage() {
                   </Field>
                   <Field label="Logo del negocio (opcional)">
                     <div className="flex items-center gap-3">
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 grid place-items-center">
+                      <div
+                        className="h-16 w-16 shrink-0 grid place-items-center overflow-hidden rounded-2xl border border-gray-200"
+                        style={{
+                          backgroundImage: logoUrl
+                            ? 'conic-gradient(#e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)'
+                            : undefined,
+                          backgroundColor: logoUrl ? undefined : '#f9fafb',
+                          backgroundSize: '10px 10px',
+                        }}
+                      >
                         {logoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={logoUrl}
                             alt="logo"
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain p-1"
                           />
                         ) : (
                           <span className="text-xs text-gray-400">Sin logo</span>
@@ -276,10 +266,12 @@ export default function OnboardingPage() {
                               const f = e.target.files?.[0];
                               if (!f) return;
                               try {
-                                setLogoUrl(await resizeLogo(f));
+                                setPendingLogoSrc(await readFileAsDataUrl(f));
                               } catch {
                                 setError('No pudimos leer esa imagen. Usa PNG o JPG.');
                               }
+                              // reset para permitir re-elegir el mismo archivo
+                              e.target.value = '';
                             }}
                           />
                         </label>
@@ -293,7 +285,7 @@ export default function OnboardingPage() {
                           </button>
                         )}
                         <span className="text-xs text-gray-400">
-                          PNG o JPG. Se ajusta solo.
+                          PNG o JPG. Tú eliges el recorte.
                         </span>
                       </div>
                     </div>
@@ -375,7 +367,7 @@ export default function OnboardingPage() {
                               <img
                                 src={logoUrl}
                                 alt=""
-                                className="h-4 w-4 rounded-full object-cover"
+                                className="h-4 w-4 rounded-full object-contain"
                                 aria-hidden
                               />
                             ) : (
@@ -503,6 +495,16 @@ export default function OnboardingPage() {
           border-color: #6366f1;
         }
       `}</style>
+      {pendingLogoSrc && (
+        <LogoCropper
+          src={pendingLogoSrc}
+          onConfirm={(dataUrl) => {
+            setLogoUrl(dataUrl);
+            setPendingLogoSrc(null);
+          }}
+          onCancel={() => setPendingLogoSrc(null)}
+        />
+      )}
     </main>
   );
 }
