@@ -7,12 +7,12 @@ on:
     branches: [main]
 
 jobs:
-  lint-poc:
-    name: lint poc/
+  lint-web:
+    name: lint web/
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: poc
+        working-directory: web
     steps:
       - uses: actions/checkout@v4
 
@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: poc/package-lock.json
+          cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
         run: npm ci

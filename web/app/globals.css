@@ -62,6 +62,7 @@
 }
 
 html, body { height: 100%; }
+/* scroll-behavior gestionado por Lenis en desktop; smooth nativo en touch/reduced-motion */
 html { scroll-behavior: smooth; }
 body {
   background: hsl(var(--background));
@@ -89,4 +90,166 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Hero Entrance ──────────────────────────────────────── */
+/* Keyframes directos, sin IO. animation-fill-mode: both mantiene
+   opacity:0 antes de que inicie el delay y opacity:1 al terminar. */
+
+@keyframes hero-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes hero-card-in {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes aurora-fade-in {
+  from { opacity: 0; filter: blur(20px); }
+  to   { opacity: 0.65; filter: blur(0); }
+}
+
+/* Cada clase mapea a un elemento del hero con su delay armónico (120ms) */
+.hero-1 { animation: hero-fade-up 0.60s cubic-bezier(0.16,1,0.3,1)   0ms both; }
+.hero-2 { animation: hero-fade-up 0.75s cubic-bezier(0.16,1,0.3,1) 120ms both; }
+.hero-3 { animation: hero-fade-up 0.65s cubic-bezier(0.16,1,0.3,1) 240ms both; }
+.hero-4 { animation: hero-fade-up 0.60s cubic-bezier(0.16,1,0.3,1) 360ms both; }
+.hero-5 { animation: hero-fade-up 0.55s cubic-bezier(0.16,1,0.3,1) 480ms both; }
+/* Tarjeta derecha: más lenta y con scale para dar peso visual */
+.hero-card { animation: hero-card-in 0.80s cubic-bezier(0.16,1,0.3,1) 200ms both; }
+/* Aurora: fade-in dramático y cinematográfico */
+.hero-aurora { animation: aurora-fade-in 3s cubic-bezier(0.16,1,0.3,1) 150ms both; }
+
+/* ── Text Animations ────────────────────────────────────── */
+
+@keyframes shiny-text {
+  0%, 10% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-shiny-text {
+  color: transparent;
+  background: linear-gradient(
+    120deg,
+    rgba(100, 100, 100, 0.5) 40%,
+    rgba(0, 0, 0, 1) 50%,
+    rgba(100, 100, 100, 0.5) 60%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shiny-text 3s linear infinite;
+}
+
+.animate-gradient-shift {
+  background-size: 200% auto;
+  animation: gradient-shift 4s ease-in-out infinite;
+}
+
+/* ── Motion System ──────────────────────────────────────── */
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
+}
+
+@keyframes aurora-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes aurora-breathe {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.5; }
+  50% { transform: scale(1.2) translate(-10px, 10px); opacity: 0.8; }
+}
+
+.animate-float-slow {
+  animation: float-soft 6s ease-in-out infinite;
+}
+
+.animate-float-slower {
+  animation: float-soft 8s ease-in-out infinite 1s;
+}
+
+.animate-float-slowest {
+  animation: float-soft 10s ease-in-out infinite 2s;
+}
+
+.animate-aurora-1 { animation: aurora-spin 15s linear infinite; }
+.animate-aurora-2 { animation: aurora-spin 20s linear infinite reverse; }
+.animate-aurora-3 { animation: aurora-breathe 8s ease-in-out infinite; }
+
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-expo:  cubic-bezier(0.55, 0, 1, 0.45);
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.card-in {
+  animation: card-in 0.6s var(--ease-out-expo) both;
+}
+
+/* Stagger delays — armónicos de 80ms */
+.stagger-1 { transition-delay: 0.08s; }
+.stagger-2 { transition-delay: 0.16s; }
+.stagger-3 { transition-delay: 0.24s; }
+.stagger-4 { transition-delay: 0.32s; }
+.stagger-5 { transition-delay: 0.40s; }
+.stagger-6 { transition-delay: 0.48s; }
+
+/* ── Especiales ─────────────────────────────────────────── */
+@keyframes reveal-right {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+.animate-draw-line {
+  /* Retraso de 450ms para que se dibuje justo después de que la palabra "Lealtad" aparece */
+  animation: reveal-right 0.8s var(--ease-out-expo) 0.45s both;
+}
+
+/* Scroll reveal — activado solo cuando JS inicializa (.js-motion-ready)
+   garantiza que sin JS todos los elementos sean visibles */
+.js-motion-ready .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity  0.7s var(--ease-out-expo),
+    transform 0.7s var(--ease-out-expo);
+  will-change: opacity, transform;
+}
+
+.js-motion-ready .reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  will-change: auto;
+}
+
+/* Chip / lateral slide-in */
+.js-motion-ready .reveal-x {
+  opacity: 0;
+  transform: translateX(20px);
+  transition:
+    opacity  0.55s var(--ease-out-expo),
+    transform 0.55s var(--ease-out-expo);
+  will-change: opacity, transform;
+}
+
+.js-motion-ready .reveal-x.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+  will-change: auto;
 }

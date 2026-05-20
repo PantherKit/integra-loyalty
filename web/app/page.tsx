@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowRight,
   BellRing,
@@ -15,8 +16,12 @@ import {
   Store,
   type LucideIcon,
 } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import IntegraLogo from '@/components/IntegraLogo';
-import LoyaltyPass from '@/components/LoyaltyPass';
+import NavLanding from '@/components/NavLanding';
+import ScrollRevealInit from '@/components/ScrollRevealInit';
+import LenisInit from '@/components/LenisInit';
+import Aurora from '@/components/Aurora';
 
 export const metadata = {
   title: 'Integra Loyalty — Lealtad sin app, lista para operar',
@@ -81,80 +86,116 @@ const CAPABILITIES = [
 
 const PLANS = [
   {
-    name: 'Piloto',
-    price: '$349',
-    detail: '1 sucursal',
-    features: ['1 tarjeta de lealtad', 'Apple + Google Wallet', 'QR de alta', 'Panel básico'],
+    name: 'Starter',
+    price: '$699',
+    detail: 'Perfecto para pequeños negocios y emprendedores.',
+    highlight: false,
+    features: [
+      '1 Establecimiento',
+      'Panel de métricas básico',
+      'Hasta 400 tarjetas activas',
+      '1 Administrador',
+      'Base de datos',
+      'Soporte básico',
+      'Alta por QR (estándar)'
+    ],
   },
   {
-    name: 'Operación',
-    price: '$649',
-    detail: 'programa activo',
-    features: ['Clientes ilimitados', 'Campañas y cumpleaños', 'Geo-notificaciones', 'Onboarding asistido'],
+    name: 'Core',
+    price: '$999',
+    detail: 'Automatiza la lealtad con métricas y notificaciones.',
+    highlight: true,
+    features: [
+      'Todo lo de Starter',
+      'Panel de métricas avanzado',
+      'Hasta 600 tarjetas activas',
+      'Notificaciones por geolocalización',
+      'Automatizaciones básicas',
+      'Reseñas de Google'
+    ],
   },
   {
-    name: 'Multi-sucursal',
-    price: '$1,190',
-    detail: 'cadenas y franquicias',
-    features: ['3 sucursales incluidas', 'Clientes unificados', 'Reportes por sucursal', 'Roles y permisos'],
+    name: 'Grow',
+    price: '$1,429',
+    detail: 'Accede a herramientas avanzadas y personalización total.',
+    highlight: false,
+    features: [
+      'Todo lo de Core',
+      '2 Establecimientos',
+      'Hasta 1,200 tarjetas activas',
+      '2 Administradores',
+      'Soporte prioritario'
+    ],
   },
 ];
-
-function Nav() {
-  return (
-    <nav className="sticky top-0 z-30 border-b border-paper-300/80 bg-white/90 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-5 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight text-ink-900">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-ink-900 text-paper-50">
-            <IntegraLogo size={18} />
-          </span>
-          <span>Integra AI · Loyalty</span>
-        </Link>
-        <div className="ml-auto hidden items-center gap-1 text-sm md:flex">
-          <a href="#problema" className="rounded-full px-3 py-2 text-[#5a5450] transition hover:bg-white hover:text-ink-900">
-            Problema
-          </a>
-          <a href="#como" className="rounded-full px-3 py-2 text-[#5a5450] transition hover:bg-white hover:text-ink-900">
-            Proceso
-          </a>
-          <a href="#precios" className="rounded-full px-3 py-2 text-[#5a5450] transition hover:bg-white hover:text-ink-900">
-            Planes
-          </a>
-        </div>
-        <div className="ml-auto flex items-center gap-2 md:ml-2">
-          <Link href="/login/" className="hidden rounded-full px-3 py-2 text-sm font-medium text-[#5a5450] transition hover:bg-white hover:text-ink-900 sm:inline-flex">
-            Entrar
-          </Link>
-          <Link
-            href="/onboarding/"
-            className="inline-flex min-h-11 items-center rounded-full bg-ink-900 px-4 py-2 text-sm font-semibold text-paper-50 transition hover:bg-ink-800"
-          >
-            Crear piloto
-          </Link>
-        </div>
-      </div>
-    </nav>
-  );
-}
 
 export default function Home() {
   return (
     <main className="flex-1">
-      <Nav />
+      <ScrollRevealInit />
+      <LenisInit />
+      <NavLanding />
 
-      <section className="bg-white">
-        <div className="mx-auto grid min-h-[calc(100dvh-4rem)] max-w-7xl items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-28">
-          <div>
-            <p className="inline-flex rounded-full border border-paper-300 bg-white px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#8c8780]">
-              Producto Integra AI · Wallet loyalty
-            </p>
-            <h1 className="mt-6 max-w-4xl text-[3.4rem] font-bold leading-[0.95] tracking-[-0.025em] text-ink-900 sm:text-6xl lg:text-[5.5rem]">
-              Lealtad sin app, lista para operar.
+      {/* ── Hero ────────────────────────────────────────────── */}
+      <section className="relative bg-white">
+        {/* Aurora: -top-16 extiende el canvas detrás del nav transparente (h-16).
+            overflow-visible en el section para que no se corte. */}
+        <div
+          className="hero-aurora pointer-events-none absolute inset-x-0 top-0 h-[65vh] min-h-[400px] max-h-[600px]"
+          style={{
+            maskImage:
+              'linear-gradient(to bottom, black 0%, black 15%, transparent 75%)',
+            WebkitMaskImage:
+              'linear-gradient(to bottom, black 0%, black 15%, transparent 75%)',
+          }}
+        >
+          <Aurora
+            colorStops={['#6366f1', '#a855f7', '#ddd6fe']}
+            amplitude={1.1}
+            blend={1.2}
+            speed={0.12}
+          />
+        </div>
+        <div className="relative mx-auto grid min-h-dvh max-w-7xl items-start gap-16 px-4 pb-20 pt-32 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-32 lg:px-8 lg:pb-28 lg:pt-40">
+          <div className="lg:pt-32">
+            <h1 className="hero-1 max-w-4xl text-[3.4rem] font-bold leading-[0.95] tracking-[-0.025em] text-ink-900 sm:text-6xl lg:text-[5.5rem]">
+              <span className="relative inline-block mb-[0.25em]">
+                Lealtad
+                {/* Wrapper que ejecuta el clip-path reveal — el SVG queda libre para sangrar */}
+                <div
+                  className="animate-draw-line pointer-events-none absolute -bottom-[0.68em] left-0 -z-10 h-[1.1em] w-full overflow-hidden"
+                >
+                  <svg
+                    className="absolute left-0 top-[0.34em] h-[0.48em] w-full text-accent-500"
+                    viewBox="0 0 200 56"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                    style={{ overflow: 'visible' }}
+                  >
+                    <defs>
+                      <filter id="marker-noise" x="-20%" y="-20%" width="140%" height="140%">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+                      </filter>
+                    </defs>
+                    <path
+                      d="M 2 38 Q 100 10 198 38"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      filter="url(#marker-noise)"
+                    />
+                  </svg>
+                </div>
+              </span>{' '}
+              sin app, lista para operar.
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-[1.7] text-[#5a5450]">
+            <p className="hero-2 mt-7 max-w-xl text-lg leading-[1.7] text-[#5a5450]">
               Integra Loyalty convierte un programa de sellos en una tarjeta viva de Apple Wallet y Google Wallet, con alta por QR, actualizaciones nativas y métricas desde el primer piloto.
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="hero-3 mt-9 flex flex-wrap gap-3">
               <Link
                 href="/onboarding/"
                 className="group inline-flex min-h-12 items-center gap-2 rounded-full bg-ink-900 px-6 py-3 text-sm font-semibold text-paper-50 transition hover:bg-ink-800"
@@ -169,133 +210,183 @@ export default function Home() {
                 Ver proceso
               </a>
             </div>
-            <div className="mt-12 grid max-w-2xl grid-cols-3 gap-4 border-t border-paper-300 pt-6">
+            <div className="hero-4 mt-12 grid max-w-2xl grid-cols-3 gap-4 border-t border-paper-300 pt-6">
               <Metric value='<5 min' label='alta del comercio' />
               <Metric value='0' label='apps a instalar' />
               <Metric value='2' label='wallets nativos' />
             </div>
           </div>
 
-          <div className="relative min-w-0">
-            <div className="mx-auto max-w-[30rem] rounded-[2rem] border border-paper-300 bg-white p-4 shadow-[0_18px_60px_rgba(15,13,10,0.08)] sm:p-6">
-              <div className="rounded-[1.5rem] border border-paper-300 bg-white p-4">
-                <LoyaltyPass
-                  merchantName="Café Mérida"
-                  brandColor="#5B3A1F"
-                  tagline="Tostado de altura"
-                  programName="Tarjeta Café Mérida"
-                  stampsRequired={7}
-                  rewardDetail="Café gratis"
-                  stamps={5}
-                  variant="preview"
-                />
+          <div className="hero-card relative min-w-0 flex items-start justify-end">
+            {/* Contenedor del Ramo */}
+            <div className="relative w-full max-w-[26rem] aspect-[4/5] mr-4 lg:mr-12">
+
+              {/* Mockup 2: Izquierda (Detrás) */}
+              {/* Añadimos z-10 y hover:z-30 para que al pasar el mouse salte al frente. Usamos group-hover o hover normal */}
+              <div className="absolute left-[-22%] top-20 w-[75%] -rotate-[16deg] transition-all duration-700 ease-out hover:-rotate-6 hover:scale-105 hover:z-30 z-10">
+                <div className="animate-float-slow">
+                  <Image
+                    src="/MockUp02.png"
+                    alt="Google Wallet"
+                    width={500}
+                    height={1000}
+                    priority
+                    className="h-auto w-full drop-shadow-[0_20px_40px_rgba(15,13,10,0.15)]"
+                  />
+                </div>
               </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                <TechPill icon={ShieldCheck} label="PassKit" />
-                <TechPill icon={Smartphone} label="Google Wallet" />
-                <TechPill icon={ScanLine} label="QR por comercio" />
-                <TechPill icon={Radio} label="Push / geofence" />
+
+              {/* Mockup 3: Derecha (Detrás) */}
+              <div className="absolute right-[-22%] top-24 w-[75%] rotate-[16deg] transition-all duration-700 ease-out hover:rotate-6 hover:scale-105 hover:z-30 z-10">
+                <div className="animate-float-slower">
+                  <Image
+                    src="/MockUp03.png"
+                    alt="Notificación Geofence"
+                    width={500}
+                    height={1000}
+                    priority
+                    className="h-auto w-full drop-shadow-[0_20px_40px_rgba(15,13,10,0.15)]"
+                  />
+                </div>
               </div>
+
+              {/* Mockup 1: Centro (Frente) */}
+              <div className="absolute inset-x-[5%] top-0 transition-all duration-700 ease-out hover:scale-105 z-20">
+                <div className="animate-float-slowest">
+                  <Image
+                    src="/MockUp01.png"
+                    alt="Apple Wallet Pass"
+                    width={500}
+                    height={1000}
+                    priority
+                    className="h-auto w-full drop-shadow-[0_30px_60px_rgba(15,13,10,0.25)]"
+                  />
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
       </section>
 
+      {/* ── Problema ───────────────────────────────────────── */}
       <section id="problema" className="bg-white py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[0.55fr_1fr]">
             <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Problema operativo</p>
-              <h2 className="mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
+              <p className="reveal font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Problema operativo</p>
+              <h2 className="reveal stagger-1 mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
                 La lealtad falla cuando depende de fricción.
               </h2>
             </div>
             <div className="divide-y divide-paper-300 border-y border-paper-300">
               {CHALLENGES.map((item, index) => (
-                <EditorialRow key={item.title} index={index + 1} title={item.title} body={item.body} />
+                <EditorialRow
+                  key={item.title}
+                  index={index + 1}
+                  title={item.title}
+                  body={item.body}
+                  className={`reveal stagger-${index + 1}`}
+                />
               ))}
             </div>
           </div>
         </div>
       </section>
 
+      {/* ── Cómo funciona ──────────────────────────────────── */}
       <section id="como" className="bg-white py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[0.55fr_1fr] lg:items-end">
             <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Cómo funciona</p>
-              <h2 className="mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
+              <p className="reveal font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Cómo funciona</p>
+              <h2 className="reveal stagger-1 mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
                 Del QR al canje, sin inventar otra app.
               </h2>
             </div>
-            <p className="max-w-2xl text-base leading-[1.75] text-[#5a5450] lg:justify-self-end">
+            <p className="reveal stagger-2 max-w-2xl text-base leading-[1.75] text-[#5a5450] lg:justify-self-end">
               El flujo está diseñado para validar operación real: configuración, alta de cliente, tarjeta activa, sellos, notificaciones y métricas.
             </p>
           </div>
           <div className="mt-14 divide-y divide-paper-300 border-y border-paper-300 bg-white">
             {PROCESS.map((step, index) => (
-              <ProcessRow key={step.title} index={index + 1} {...step} />
+              <ProcessRow
+                key={step.title}
+                index={index + 1}
+                {...step}
+                className={`reveal stagger-${index + 1}`}
+              />
             ))}
           </div>
         </div>
       </section>
 
+      {/* ── Capacidades ────────────────────────────────────── */}
       <section className="bg-white py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[0.58fr_1fr] lg:items-start">
             <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Capacidades</p>
-              <h2 className="mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
+              <p className="reveal font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Capacidades</p>
+              <h2 className="reveal stagger-1 mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
                 Tecnología de producto, presentada con calma.
               </h2>
-              <p className="mt-6 max-w-xl text-base leading-[1.75] text-[#5a5450]">
+              <p className="reveal stagger-2 mt-6 max-w-xl text-base leading-[1.75] text-[#5a5450]">
                 La landing no necesita prometer magia. Tiene que dejar claro que el sistema puede operar en campo y escalar desde un piloto medible.
               </p>
             </div>
             <div className="grid gap-px overflow-hidden rounded-2xl border border-paper-300 bg-paper-300 sm:grid-cols-2">
-              {CAPABILITIES.map((capability) => (
-                <Capability key={capability.label} {...capability} />
+              {CAPABILITIES.map((capability, index) => (
+                <Capability
+                  key={capability.label}
+                  {...capability}
+                  className={`reveal stagger-${index + 1}`}
+                />
               ))}
             </div>
           </div>
         </div>
       </section>
 
+      {/* ── Precios ────────────────────────────────────────── */}
       <section id="precios" className="bg-white py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-10 lg:grid-cols-[0.52fr_1fr] lg:items-start">
-            <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Planes</p>
-              <h2 className="mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
-                Precio simple para validar rápido.
-              </h2>
-              <p className="mt-6 max-w-xl text-base leading-[1.75] text-[#5a5450]">
-                14 días gratis. Sin tarjeta de crédito. Los planes quedan como soporte comercial, no como el centro del mensaje.
-              </p>
-            </div>
-            <div className="divide-y divide-paper-300 border-y border-paper-300">
-              {PLANS.map((plan) => (
-                <PlanRow key={plan.name} {...plan} />
-              ))}
-            </div>
+          <div className="mb-16 text-center">
+            <p className="reveal font-mono text-[11px] uppercase tracking-[0.18em] text-accent-500">Inversión</p>
+            <h2 className="reveal stagger-1 mt-5 text-4xl font-bold leading-[0.98] tracking-[-0.02em] text-ink-900 md:text-5xl">
+              Precio simple para escalar rápido.
+            </h2>
+            <p className="reveal stagger-2 mt-6 mx-auto max-w-xl text-base leading-[1.75] text-[#5a5450]">
+              14 días gratis. Sin tarjeta de crédito. Los planes quedan como soporte comercial, no como el centro del mensaje.
+            </p>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-3">
+            {PLANS.map((plan, index) => (
+              <PlanCard
+                key={plan.name}
+                {...plan}
+                className={`reveal stagger-${index + 1}`}
+              />
+            ))}
           </div>
         </div>
       </section>
 
+      {/* ── CTA final ──────────────────────────────────────── */}
       <section className="bg-ink-900 py-24 text-[#f5f0e8] lg:py-32">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.65fr_0.35fr] lg:items-end lg:px-8">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#9e9890]">Producto Integra AI</p>
-            <h2 className="mt-5 max-w-4xl text-4xl font-bold leading-[0.98] tracking-[-0.02em] md:text-5xl">
+            <p className="reveal font-mono text-[11px] uppercase tracking-[0.18em] text-[#9e9890]">Producto Integra AI</p>
+            <h2 className="reveal stagger-1 mt-5 max-w-4xl text-4xl font-bold leading-[0.98] tracking-[-0.02em] md:text-5xl">
               Construido para probar una operación, no para quedarse en demo.
             </h2>
-            <p className="mt-6 max-w-2xl text-base leading-[1.75] text-[#c8c3bc]">
+            <p className="reveal stagger-2 mt-6 max-w-2xl text-base leading-[1.75] text-[#c8c3bc]">
               Loyalty conserva el mismo criterio de Integra: claridad técnica, evidencia operativa y una experiencia que puede pasar de piloto a producción.
             </p>
           </div>
           <Link
             href="/onboarding/"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#f5f0e8] px-6 py-3 text-sm font-semibold text-ink-900 transition hover:bg-white"
+            className="reveal stagger-3 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#f5f0e8] px-6 py-3 text-sm font-semibold text-ink-900 transition hover:bg-white"
           >
             Crear tarjeta piloto <ArrowRight size={16} />
           </Link>
@@ -339,9 +430,19 @@ function TechPill({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   );
 }
 
-function EditorialRow({ index, title, body }: { index: number; title: string; body: string }) {
+function EditorialRow({
+  index,
+  title,
+  body,
+  className,
+}: {
+  index: number;
+  title: string;
+  body: string;
+  className?: string;
+}) {
   return (
-    <div className="grid gap-4 py-7 sm:grid-cols-[5rem_0.8fr_1fr] sm:items-start">
+    <div className={cn('grid gap-4 py-7 sm:grid-cols-[5rem_0.8fr_1fr] sm:items-start', className)}>
       <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#8c8780]">
         {String(index).padStart(2, '0')}
       </span>
@@ -357,15 +458,17 @@ function ProcessRow({
   title,
   body,
   meta,
+  className,
 }: {
   index: number;
   icon: LucideIcon;
   title: string;
   body: string;
   meta: string;
+  className?: string;
 }) {
   return (
-    <div className="grid gap-5 px-4 py-7 sm:grid-cols-[5rem_3rem_1fr_7rem] sm:items-center sm:px-6">
+    <div className={cn('grid gap-5 px-4 py-7 sm:grid-cols-[5rem_3rem_1fr_7rem] sm:items-center sm:px-6', className)}>
       <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#8c8780]">
         {String(index).padStart(2, '0')}
       </span>
@@ -381,9 +484,19 @@ function ProcessRow({
   );
 }
 
-function Capability({ icon: Icon, label, detail }: { icon: LucideIcon; label: string; detail: string }) {
+function Capability({
+  icon: Icon,
+  label,
+  detail,
+  className,
+}: {
+  icon: LucideIcon;
+  label: string;
+  detail: string;
+  className?: string;
+}) {
   return (
-    <div className="bg-white p-6">
+    <div className={cn('bg-white p-6', className)}>
       <div className="mb-5 grid h-10 w-10 place-items-center rounded-full border border-paper-300 bg-white text-accent-500">
         <Icon size={18} />
       </div>
@@ -393,41 +506,134 @@ function Capability({ icon: Icon, label, detail }: { icon: LucideIcon; label: st
   );
 }
 
-function PlanRow({
+function PlanCard({
   name,
   price,
   detail,
+  highlight,
   features,
+  className,
 }: {
   name: string;
   price: string;
   detail: string;
+  highlight?: boolean;
   features: string[];
+  className?: string;
 }) {
   return (
-    <div className="grid gap-5 py-7 lg:grid-cols-[0.35fr_0.25fr_1fr_auto] lg:items-start">
-      <div>
-        <h3 className="text-xl font-semibold tracking-[-0.018em] text-ink-900">{name}</h3>
-        <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#8c8780]">{detail}</p>
+    <div
+      className={cn(
+        'group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] bg-white transition-all duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-2 hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] sm:p-1',
+        'shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-paper-300/50',
+        className
+      )}
+    >
+      {/* ── CONTORNO GLOW ELEGANTE (Hover) ── */}
+      <div className="pointer-events-none absolute inset-0 z-20 opacity-0 transition-opacity duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100">
+        <div
+          className="absolute inset-0 rounded-[2.5rem] border-[1.5px] border-accent-500/50"
+          style={{
+            maskImage: 'linear-gradient(to bottom, black 0%, transparent 60%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 60%)'
+          }}
+        />
       </div>
-      <div>
-        <span className="text-3xl font-semibold tracking-[-0.03em] text-ink-900">{price}</span>
-        <span className="block text-xs text-[#8c8780]">MXN/mes</span>
+
+      {/* ── HEADER CON AURORA ── */}
+      <div className="relative overflow-hidden rounded-[2.25rem] bg-paper-50 px-8 pb-8 pt-10">
+
+        {/* Glows difusos en el fondo del header (dependen del plan) */}
+        <div className="pointer-events-none absolute inset-0 opacity-80 mix-blend-multiply">
+          {name === 'Starter' && (
+            <>
+              <div className="animate-aurora-1 absolute -left-10 top-0 h-40 w-40 rounded-full bg-orange-100 blur-3xl" />
+              <div className="animate-aurora-2 absolute -right-10 top-10 h-40 w-40 rounded-full bg-blue-100/50 blur-3xl" />
+            </>
+          )}
+          {name === 'Core' && (
+            <>
+              <div className="animate-aurora-1 absolute -left-10 top-0 h-40 w-40 rounded-full bg-blue-200/60 blur-3xl" />
+              <div className="animate-aurora-2 absolute -right-10 top-10 h-40 w-40 rounded-full bg-orange-200/60 blur-3xl" />
+              <div className="animate-aurora-3 absolute left-1/2 top-0 h-32 w-32 -translate-x-1/2 rounded-full bg-purple-300/50 blur-3xl" />
+            </>
+          )}
+          {name === 'Grow' && (
+            <>
+              <div className="animate-aurora-1 absolute -left-10 top-0 h-40 w-40 rounded-full bg-purple-200/50 blur-3xl" />
+              <div className="animate-aurora-2 absolute -right-10 top-10 h-40 w-40 rounded-full bg-rose-200/50 blur-3xl" />
+            </>
+          )}
+        </div>
+
+        <div className="relative z-10">
+          <div className="flex flex-col items-start gap-1">
+            {/* Contenedor de altura fija para alinear los títulos */}
+            <div className="h-7">
+              {name === 'Core' && (
+                <div className="inline-flex animate-shiny-text items-center justify-center rounded-full border border-paper-300/60 bg-white/50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest backdrop-blur-sm">
+                  Recomendado
+                </div>
+              )}
+            </div>
+            <h3 className={cn(
+              'text-xl font-semibold tracking-tight',
+              name === 'Grow' ? 'animate-gradient-shift bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 bg-clip-text text-transparent' : 'text-ink-900'
+            )}>
+              {name}
+            </h3>
+          </div>
+
+          <div className="mt-2 flex items-baseline gap-3">
+            <span className="text-6xl font-bold tracking-tighter text-ink-900">{price}</span>
+            <div className="flex flex-col text-xs font-medium leading-tight text-[#8c8780]">
+              <span>/ mes</span>
+              <span>facturado anual</span>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <Link
+              href="/onboarding/"
+              className={cn(
+                'inline-flex min-h-[3.25rem] w-full items-center justify-center rounded-[1.25rem] text-sm font-semibold transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03]',
+                name === 'Starter'
+                  ? 'bg-[#f0f0f0] text-ink-900 hover:bg-[#e5e5e5]'
+                  : 'bg-ink-900 text-white shadow-[0_4px_14px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)]'
+              )}
+            >
+              Empezar ahora
+            </Link>
+          </div>
+        </div>
       </div>
-      <ul className="grid gap-2 text-sm text-[#5a5450] sm:grid-cols-2">
-        {features.map((feature) => (
-          <li key={feature} className="flex gap-2">
-            <Check size={16} className="mt-0.5 shrink-0 text-accent-500" />
-            {feature}
-          </li>
-        ))}
-      </ul>
-      <Link
-        href="/onboarding/"
-        className="inline-flex min-h-11 items-center justify-center rounded-full border border-paper-300 bg-white px-5 py-2.5 text-sm font-semibold text-ink-900 transition hover:border-[#cdc6b9]"
-      >
-        Empezar
-      </Link>
+
+      {/* ── FOOTER CON FEATURES ── */}
+      <div className="px-8 pb-10 pt-8">
+        <ul className="grid gap-4 text-sm text-ink-900">
+          {features.map((feature) => {
+            const isTodoFeature = feature.startsWith('Todo lo de');
+            return (
+              <li key={feature} className="flex items-start gap-3">
+                <Check
+                  size={18}
+                  strokeWidth={2.5}
+                  className={cn("mt-0.5 shrink-0", isTodoFeature ? "text-accent-500" : "text-ink-900")}
+                />
+                <span className={cn(
+                  "leading-relaxed",
+                  isTodoFeature && "animate-gradient-shift bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 bg-clip-text text-transparent font-medium"
+                )}>
+                  {feature}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="mt-8 text-sm text-[#8c8780]">
+          ¿Necesitas más límites?
+        </div>
+      </div>
     </div>
   );
 }
