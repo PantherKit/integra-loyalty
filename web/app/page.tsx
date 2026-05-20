@@ -141,9 +141,8 @@ export default function Home() {
         {/* Aurora: -top-16 extiende el canvas detrás del nav transparente (h-16).
             overflow-visible en el section para que no se corte. */}
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-[65vh] min-h-[400px] max-h-[600px]"
+          className="hero-aurora pointer-events-none absolute inset-x-0 top-0 h-[65vh] min-h-[400px] max-h-[600px]"
           style={{
-            opacity: 0.65,
             maskImage:
               'linear-gradient(to bottom, black 0%, black 15%, transparent 75%)',
             WebkitMaskImage:
