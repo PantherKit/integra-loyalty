@@ -22,6 +22,7 @@ import {
   type StampStyle,
 } from '@/lib/api';
 import ApplePassPreview from '@/components/ApplePassPreview';
+import LogoCropper from '@/components/LogoCropper';
 import QrCode from '@/components/QrCode';
 import { cn } from '@/lib/cn';
 
@@ -54,127 +55,14 @@ const INDUSTRIES = [
   { v: 'other', l: 'Otro' },
 ] as const;
 
-/** Auto-trim de bordes blancos/transparentes + ajuste a 60x60 PNG.
- *
- *  Pasos:
- *   1. Detectar el bounding box del contenido real (descartar pixels casi
- *      transparentes o casi blancos en los bordes).
- *   2. "Contener" ese contenido en un cuadrado de 60x60 con fondo
- *      transparente (la dimensión más larga llena el cuadro; la otra queda
- *      centrada con padding transparente).
- *   3. Exportar como PNG.
- *
- *  Apple Wallet le pone su marco blanco redondeado al icono — con
- *  transparencia, el contenido cae limpio sobre ese marco.
- */
-function resizeLogo(file: File): Promise<string> {
+/** Lee un File como data URL (PNG/JPG). Lo pasamos al cropper, que es el que
+ *  decide el recorte final y produce el 60x60 que se guarda. */
+function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return reject(new Error('no_image'));
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('read_error'));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('img_error'));
-      img.onload = () => {
-        const probe = document.createElement('canvas');
-        probe.width = img.width;
-        probe.height = img.height;
-        const probeCtx = probe.getContext('2d');
-        if (!probeCtx) return reject(new Error('no_ctx'));
-        probeCtx.drawImage(img, 0, 0);
-
-        // Bounding box del contenido. Si la lectura de pixels falla
-        // (canvas tainted o similar), se usa la imagen completa.
-        let sx = 0;
-        let sy = 0;
-        let sw = img.width;
-        let sh = img.height;
-        try {
-          const data = probeCtx.getImageData(0, 0, img.width, img.height).data;
-          const w = img.width;
-          const h = img.height;
-          const px = (x: number, y: number) => {
-            const i = (y * w + x) * 4;
-            return [data[i], data[i + 1], data[i + 2], data[i + 3]] as const;
-          };
-          // Sample de las 4 esquinas para detectar el color de fondo real.
-          // Si las 4 son similares, ese es el fondo (sea blanco, crema, gris…).
-          const corners = [
-            px(0, 0),
-            px(w - 1, 0),
-            px(0, h - 1),
-            px(w - 1, h - 1),
-          ];
-          const allTransparent = corners.every(([, , , a]) => a < 32);
-          let bgColor: readonly [number, number, number, number] | null = null;
-          if (!allTransparent) {
-            const [r0, g0, b0, a0] = corners[0];
-            const allSimilar =
-              a0 >= 180 &&
-              corners.every(
-                ([r, g, b, a]) =>
-                  a >= 180 &&
-                  Math.abs(r - r0) <= 18 &&
-                  Math.abs(g - g0) <= 18 &&
-                  Math.abs(b - b0) <= 18,
-              );
-            if (allSimilar) bgColor = corners[0];
-          }
-          const isBg = (r: number, g: number, b: number, a: number) => {
-            if (a < 28) return true;
-            if (bgColor) {
-              const [r0, g0, b0] = bgColor;
-              return (
-                Math.abs(r - r0) <= 22 &&
-                Math.abs(g - g0) <= 22 &&
-                Math.abs(b - b0) <= 22
-              );
-            }
-            return a >= 180 && r >= 232 && g >= 232 && b >= 232;
-          };
-          let minX = w;
-          let minY = h;
-          let maxX = -1;
-          let maxY = -1;
-          for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-              const i = (y * w + x) * 4;
-              if (!isBg(data[i], data[i + 1], data[i + 2], data[i + 3])) {
-                if (x < minX) minX = x;
-                if (y < minY) minY = y;
-                if (x > maxX) maxX = x;
-                if (y > maxY) maxY = y;
-              }
-            }
-          }
-          if (maxX >= 0) {
-            sx = minX;
-            sy = minY;
-            sw = maxX - minX + 1;
-            sh = maxY - minY + 1;
-          }
-        } catch {
-          // tainted canvas: dejar bbox = imagen completa
-        }
-
-        const SIDE = 60;
-        const canvas = document.createElement('canvas');
-        canvas.width = SIDE;
-        canvas.height = SIDE;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('no_ctx'));
-        ctx.imageSmoothingQuality = 'high';
-        ctx.clearRect(0, 0, SIDE, SIDE); // fondo transparente
-        const scale = Math.min(SIDE / sw, SIDE / sh);
-        const dw = sw * scale;
-        const dh = sh * scale;
-        const dx = (SIDE - dw) / 2;
-        const dy = (SIDE - dh) / 2;
-        ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-        resolve(canvas.toDataURL('image/png'));
-      };
-      img.src = reader.result as string;
-    };
+    reader.onload = () => resolve(reader.result as string);
     reader.readAsDataURL(file);
   });
 }
@@ -188,6 +76,7 @@ export default function OnboardingPage() {
   const [color, setColor] = useState(COLORS[0]);
   const [logoText, setLogoText] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
+  const [pendingLogoSrc, setPendingLogoSrc] = useState<string | null>(null);
   // null = sin elección explícita → default dinámico ('logo' si hay logo, si no 'disc').
   const [stampPick, setStampPick] = useState<StampStyle | null>(null);
   const stampStyle: StampStyle = stampPick ?? (logoUrl ? 'logo' : 'disc');
@@ -368,10 +257,12 @@ export default function OnboardingPage() {
                               const f = e.target.files?.[0];
                               if (!f) return;
                               try {
-                                setLogoUrl(await resizeLogo(f));
+                                setPendingLogoSrc(await readFileAsDataUrl(f));
                               } catch {
                                 setError('No pudimos leer esa imagen. Usa PNG o JPG.');
                               }
+                              // reset para permitir re-elegir el mismo archivo
+                              e.target.value = '';
                             }}
                           />
                         </label>
@@ -385,7 +276,7 @@ export default function OnboardingPage() {
                           </button>
                         )}
                         <span className="text-xs text-gray-400">
-                          PNG o JPG. Se ajusta solo.
+                          PNG o JPG. Tú eliges el recorte.
                         </span>
                       </div>
                     </div>
@@ -595,6 +486,16 @@ export default function OnboardingPage() {
           border-color: #6366f1;
         }
       `}</style>
+      {pendingLogoSrc && (
+        <LogoCropper
+          src={pendingLogoSrc}
+          onConfirm={(dataUrl) => {
+            setLogoUrl(dataUrl);
+            setPendingLogoSrc(null);
+          }}
+          onCancel={() => setPendingLogoSrc(null)}
+        />
+      )}
     </main>
   );
 }
