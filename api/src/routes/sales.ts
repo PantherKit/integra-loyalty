@@ -45,6 +45,7 @@ import {
   listAllSalesAdmins,
   Window,
 } from '../lib/sales-kpi';
+import { computePriorities } from '../lib/sales-ai';
 
 export const sales = new Hono();
 
@@ -429,4 +430,61 @@ sales.get('/kpis/merchants/:repId', async (c) => {
 
   const merchants = await computeMerchantsKpisForRep(repId);
   return c.json({ repId, merchants });
+});
+
+// ============================================================================
+// AI lead scoring (ticket 06)
+// ============================================================================
+
+/**
+ * GET /admin/sales/ai/priorities/me — priorities del propio rep o admin.
+ * Para sales_admin devuelve la unión de prioridades de sus reps (top por score).
+ * `?fresh=true` (solo integra_admin) salta cache y recalcula.
+ */
+sales.get('/ai/priorities/me', async (c) => {
+  const callerRole = c.get('userRole');
+  const callerId = c.get('userId');
+  const fresh = c.req.query('fresh') === 'true' && callerRole === 'integra_admin';
+
+  if (callerRole === 'sales_rep') {
+    const priorities = await computePriorities(callerId, { fresh });
+    return c.json({ repId: callerId, priorities });
+  }
+
+  if (callerRole === 'sales_admin') {
+    const reps = await listSalesRepsByAdmin(callerId);
+    const all = await Promise.all(
+      reps.map((r) =>
+        computePriorities(r.userId, { fresh }).then((p) =>
+          p.map((pp) => ({ ...pp, repId: r.userId, repEmail: r.email }))
+        )
+      )
+    );
+    const flat = all.flat().sort((a, b) => b.score - a.score);
+    return c.json({ priorities: flat });
+  }
+
+  return c.json({ error: 'no_priorities_for_role', role: callerRole }, 400);
+});
+
+/**
+ * GET /admin/sales/ai/priorities/reps/:repId — priorities de un rep dado.
+ * Solo accesible al sales_admin del rep o a integra_admin.
+ */
+sales.get('/ai/priorities/reps/:repId', async (c) => {
+  const callerRole = c.get('userRole');
+  const callerId = c.get('userId');
+  const repId = c.req.param('repId');
+  const fresh = c.req.query('fresh') === 'true' && callerRole === 'integra_admin';
+
+  if (callerRole === 'sales_rep') return c.json({ error: 'forbidden' }, 403);
+  if (callerRole === 'sales_admin') {
+    const reps = await listSalesRepsByAdmin(callerId);
+    if (!reps.some((r) => r.userId === repId)) {
+      return c.json({ error: 'rep_not_found' }, 404);
+    }
+  }
+
+  const priorities = await computePriorities(repId, { fresh });
+  return c.json({ repId, priorities });
 });
