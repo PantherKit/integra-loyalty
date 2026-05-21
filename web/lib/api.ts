@@ -334,6 +334,30 @@ export async function getKpisMerchantsByRep(repId: string): Promise<{
   return request(`/admin/sales/kpis/merchants/${encodeURIComponent(repId)}`);
 }
 
+export interface SalesMerchant {
+  tenantId: string;
+  name: string;
+  slug: string;
+  salesRepId?: string | null;
+}
+
+export async function createSalesMerchant(input: {
+  merchantName: string;
+  industry: string;
+  ownerEmail: string;
+  salesRepId?: string;
+}): Promise<{
+  tenant: { tenantId: string; slug: string };
+  merchant: SalesMerchant;
+  owner: { userId: string; email: string };
+  tempPassword: string;
+}> {
+  return request(`/admin/sales/merchants`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 /** Decodifica payload del JWT (NO verifica firma — solo lectura cliente para guards). */
 export function decodeJwtClaims(): { sub?: string; email?: string; role?: string } | null {
   const token = getToken();

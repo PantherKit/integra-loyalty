@@ -30,12 +30,14 @@ import {
   listSalesRepsByAdmin,
   putUser,
 } from '../lib/repositories/user';
+import { randomUUID } from 'node:crypto';
 import {
   assignRepToMerchant,
   getMerchantByTenant,
   listMerchantsByRep,
 } from '../lib/repositories/merchant';
-import { INTEGRA_TENANT_ID, User } from '../lib/entities';
+import { createTenant } from '../lib/repositories/tenant';
+import { INTEGRA_TENANT_ID, Industry, User } from '../lib/entities';
 import {
   computeAdminKpi,
   computeMerchantsKpisForRep,
@@ -336,6 +338,77 @@ sales.get('/kpis/me', async (c) => {
     return c.json(kpi);
   }
   return c.json({ error: 'no_kpis_for_role', role: callerRole }, 400);
+});
+
+// ============================================================================
+// POST /admin/sales/merchants — alta de comercio asignado al rep (ticket 05)
+// ============================================================================
+
+const CreateMerchantBody = z.object({
+  merchantName: z.string().min(2).max(120),
+  industry: Industry,
+  ownerEmail: z.string().email(),
+  // Solo para sales_admin/integra_admin: a qué rep asignar. Si no se pasa,
+  // el merchant queda sin atribución. Para sales_rep se ignora y se usa su sub.
+  salesRepId: z.string().optional(),
+});
+
+sales.post('/merchants', async (c) => {
+  const callerRole = c.get('userRole');
+  const callerId = c.get('userId');
+
+  const body = await c.req.json().catch(() => null);
+  const parsed = CreateMerchantBody.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400);
+  }
+
+  // Resolución del rep dueño
+  let assignedRepId: string | null = null;
+  if (callerRole === 'sales_rep') {
+    assignedRepId = callerId;
+  } else if (parsed.data.salesRepId) {
+    // sales_admin solo puede asignar a reps de su sub-fuerza
+    if (callerRole === 'sales_admin') {
+      const reps = await listSalesRepsByAdmin(callerId);
+      if (!reps.some((r) => r.userId === parsed.data.salesRepId)) {
+        return c.json({ error: 'rep_not_in_your_team' }, 403);
+      }
+    }
+    assignedRepId = parsed.data.salesRepId;
+  }
+
+  const tempPassword = generateTempPassword();
+  const newTenantId = randomUUID();
+  const { cognitoSub } = await createCognitoUser({
+    email: parsed.data.ownerEmail,
+    password: tempPassword,
+    tenantId: newTenantId,
+    role: 'owner',
+  });
+
+  const { tenant, merchant, user } = await createTenant({
+    email: parsed.data.ownerEmail,
+    merchantName: parsed.data.merchantName,
+    industry: parsed.data.industry,
+    cognitoSub,
+    tenantId: newTenantId,
+  });
+
+  // Asignar rep
+  const finalMerchant = assignedRepId
+    ? await assignRepToMerchant(tenant.tenantId, assignedRepId)
+    : merchant;
+
+  return c.json(
+    {
+      tenant: { tenantId: tenant.tenantId, slug: merchant.slug },
+      merchant: finalMerchant,
+      owner: { userId: user.userId, email: user.email },
+      tempPassword,
+    },
+    201
+  );
 });
 
 /** GET /admin/sales/kpis/merchants/:repId — desglose por merchant del rep. */
