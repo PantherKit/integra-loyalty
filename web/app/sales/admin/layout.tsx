@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { decodeJwtClaims, clearToken } from '@/lib/api';
+import { decodeJwtClaims, clearToken, homeForRole } from '@/lib/api';
 
 /**
  * Guard de la consola de sales_admin. Redirige si el JWT no tiene rol
@@ -20,7 +20,8 @@ export default function SalesAdminLayout({ children }: { children: React.ReactNo
       return;
     }
     if (claims.role !== 'sales_admin' && claims.role !== 'integra_admin') {
-      router.replace('/dashboard');
+      // Rol ajeno a esta consola → lo mandamos a la suya, no a /dashboard a ciegas.
+      router.replace(homeForRole(claims.role));
       return;
     }
     setReady(true);

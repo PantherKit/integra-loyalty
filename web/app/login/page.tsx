@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { login, type ApiError } from '@/lib/api';
+import { login, decodeJwtClaims, homeForRole, type ApiError } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,11 +17,15 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(form);
-      // Regresa a donde el comercio iba (p. ej. dar sello con ?card=...)
-      let dest = '/dashboard/';
+      // Routing por rol: el usuario nunca escribe la URL de su consola.
+      // Tras autenticar, lo enviamos a su home según custom:role.
+      const role = decodeJwtClaims()?.role;
+      let dest = homeForRole(role);
+      // Deep-link: si venía de una ruta protegida (p. ej. dar sello con
+      // ?card=...), respetamos ese destino si pertenece a su consola.
       if (typeof window !== 'undefined') {
         const next = new URLSearchParams(window.location.search).get('next');
-        if (next && next.startsWith('/dashboard')) dest = next;
+        if (next && next.startsWith(homeForRole(role))) dest = next;
       }
       router.push(dest);
     } catch (err) {
