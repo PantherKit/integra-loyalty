@@ -507,3 +507,73 @@ sales.get('/ai/priorities/reps/:repId', async (c) => {
   const priorities = await computePriorities(repId, { fresh });
   return c.json({ repId, priorities });
 });
+
+// ============================================================================
+// Alta y listado de sales_admin (ticket 07) — solo integra_admin
+// ============================================================================
+
+const CreateAdminBody = z.object({
+  email: z.string().email(),
+});
+
+/**
+ * POST /admin/sales/admins — alta de un sales_admin.
+ * Solo integra_admin. El sales_admin no tiene padre en la jerarquía
+ * (recluta sus propios reps), por eso no lleva salesAdminId.
+ */
+sales.post('/admins', async (c) => {
+  if (c.get('userRole') !== 'integra_admin') {
+    return c.json({ error: 'forbidden', hint: 'solo integra_admin crea sales_admin' }, 403);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const parsed = CreateAdminBody.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400);
+  }
+
+  const tempPassword = generateTempPassword();
+  const { cognitoSub } = await createCognitoUser({
+    email: parsed.data.email,
+    password: tempPassword,
+    tenantId: INTEGRA_TENANT_ID,
+    role: 'sales_admin',
+  });
+
+  const user = await putUser({
+    type: 'USER',
+    tenantId: INTEGRA_TENANT_ID,
+    userId: cognitoSub,
+    email: parsed.data.email,
+    role: 'sales_admin',
+    cognitoSub,
+  });
+
+  return c.json(
+    {
+      admin: { userId: user.userId, email: user.email },
+      tempPassword, // mostrar UNA vez; entregar por canal seguro
+    },
+    201
+  );
+});
+
+/**
+ * GET /admin/sales/admins — listado simple de sales_admins (para dropdowns).
+ * Solo integra_admin. Para KPIs por admin usar /kpis/admins.
+ */
+sales.get('/admins', async (c) => {
+  if (c.get('userRole') !== 'integra_admin') {
+    return c.json({ error: 'forbidden' }, 403);
+  }
+  const all = await listIntegraUsers();
+  const admins = all
+    .filter((u) => u.role === 'sales_admin')
+    .map((u) => ({
+      userId: u.userId,
+      email: u.email,
+      createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt,
+    }));
+  return c.json({ admins });
+});
