@@ -88,6 +88,45 @@ export async function listCardsByCustomerInTenant(tenantId: string, customerId: 
 }
 
 /**
+ * Cuenta cards de un tenant con filtros opcionales (Sales Org KPIs).
+ *
+ * @param sinceIso filtra cards con createdAt >= sinceIso (ventana temporal)
+ * @param activeOnly filtra status === 'active'
+ *
+ * Hace Query con Select=COUNT solo cuando no hay filtros (más barato).
+ * Si hay filtros, query con FilterExpression y cuenta los resultados.
+ */
+export async function countCardsByTenant(
+  tenantId: string,
+  opts: { sinceIso?: string; activeOnly?: boolean } = {}
+): Promise<number> {
+  const exprValues: Record<string, unknown> = {
+    ':pk': tenantPk(tenantId),
+    ':sk': 'CARD#',
+  };
+  const filterParts: string[] = [];
+  if (opts.sinceIso) {
+    exprValues[':since'] = opts.sinceIso;
+    filterParts.push('createdAt >= :since');
+  }
+  if (opts.activeOnly) {
+    exprValues[':active'] = 'active';
+    filterParts.push('#status = :active');
+  }
+  const res = await ddb.send(
+    new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+      ExpressionAttributeValues: exprValues,
+      ExpressionAttributeNames: opts.activeOnly ? { '#status': 'status' } : undefined,
+      FilterExpression: filterParts.length ? filterParts.join(' AND ') : undefined,
+      Select: 'COUNT',
+    })
+  );
+  return res.Count ?? 0;
+}
+
+/**
  * Lookup cards por phone dentro de un tenant. Usado por merchant para "dar sellos".
  */
 export async function listCardsByPhoneInTenant(tenantId: string, phone: string): Promise<Card[]> {

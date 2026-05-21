@@ -36,6 +36,13 @@ import {
   listMerchantsByRep,
 } from '../lib/repositories/merchant';
 import { INTEGRA_TENANT_ID, User } from '../lib/entities';
+import {
+  computeAdminKpi,
+  computeMerchantsKpisForRep,
+  computeRepKpi,
+  listAllSalesAdmins,
+  Window,
+} from '../lib/sales-kpi';
 
 export const sales = new Hono();
 
@@ -268,4 +275,85 @@ sales.post('/merchants/:merchantId/assign', async (c) => {
 
   const updated = await assignRepToMerchant(merchantTenantId, parsed.data.salesRepId);
   return c.json({ merchant: updated });
+});
+
+// ============================================================================
+// KPIs (ticket 03)
+// ============================================================================
+
+function parseWindow(q: string | undefined): Window {
+  if (q === '7d' || q === '30d' || q === '90d' || q === 'all') return q;
+  return '30d';
+}
+
+/** GET /admin/sales/kpis/reps — KPIs por rep visibles al caller. */
+sales.get('/kpis/reps', async (c) => {
+  const callerRole = c.get('userRole');
+  const callerId = c.get('userId');
+  if (callerRole === 'sales_rep') return c.json({ error: 'forbidden' }, 403);
+
+  const window = parseWindow(c.req.query('window'));
+  const adminIdFilter = c.req.query('adminId');
+
+  let reps: User[];
+  if (callerRole === 'sales_admin') {
+    reps = await listSalesRepsByAdmin(callerId);
+  } else {
+    const all = await listIntegraUsers();
+    reps = all.filter((u) => u.role === 'sales_rep');
+    if (adminIdFilter) reps = reps.filter((u) => u.salesAdminId === adminIdFilter);
+  }
+
+  const kpis = await Promise.all(
+    reps.map((r) => computeRepKpi({ userId: r.userId, email: r.email }, window))
+  );
+  return c.json({ window, reps: kpis });
+});
+
+/** GET /admin/sales/kpis/admins — totales por sales_admin (integra_admin only). */
+sales.get('/kpis/admins', async (c) => {
+  const callerRole = c.get('userRole');
+  if (callerRole !== 'integra_admin') return c.json({ error: 'forbidden' }, 403);
+
+  const admins = await listAllSalesAdmins();
+  const kpis = await Promise.all(admins.map((a) => computeAdminKpi(a)));
+  return c.json({ admins: kpis });
+});
+
+/** GET /admin/sales/kpis/me — KPI personal del caller (rep o admin). */
+sales.get('/kpis/me', async (c) => {
+  const callerRole = c.get('userRole');
+  const callerId = c.get('userId');
+  const callerEmail = c.get('userEmail');
+
+  if (callerRole === 'sales_rep') {
+    const window = parseWindow(c.req.query('window'));
+    const kpi = await computeRepKpi({ userId: callerId, email: callerEmail }, window);
+    return c.json(kpi);
+  }
+  if (callerRole === 'sales_admin') {
+    const kpi = await computeAdminKpi({ userId: callerId, email: callerEmail });
+    return c.json(kpi);
+  }
+  return c.json({ error: 'no_kpis_for_role', role: callerRole }, 400);
+});
+
+/** GET /admin/sales/kpis/merchants/:repId — desglose por merchant del rep. */
+sales.get('/kpis/merchants/:repId', async (c) => {
+  const callerRole = c.get('userRole');
+  const callerId = c.get('userId');
+  const repId = c.req.param('repId');
+
+  if (callerRole === 'sales_rep' && repId !== callerId) {
+    return c.json({ error: 'forbidden' }, 403);
+  }
+  if (callerRole === 'sales_admin') {
+    const reps = await listSalesRepsByAdmin(callerId);
+    if (!reps.some((r) => r.userId === repId)) {
+      return c.json({ error: 'rep_not_found' }, 404);
+    }
+  }
+
+  const merchants = await computeMerchantsKpisForRep(repId);
+  return c.json({ repId, merchants });
 });
