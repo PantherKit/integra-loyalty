@@ -71,6 +71,9 @@ export const MerchantSchema = z.object({
   // Estilo del sello del grid de la strip. Default efectivo lo calcula
   // applePass: 'logo' si hay logoUrl, si no 'disc'.
   stampStyle: StampStyleSchema.optional(),
+  // Atribución de ventas: userId del sales_rep que vendió esta cuenta.
+  // Null/ausente para merchants legacy (anteriores a la jerarquía Sales Org).
+  salesRepId: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -80,16 +83,46 @@ export type Merchant = z.infer<typeof MerchantSchema>;
 // User
 // =============================================================================
 
-export const UserSchema = z.object({
-  type: z.literal('USER'),
-  tenantId: z.string().uuid(),
-  userId: z.string(), // Cognito sub
-  email: z.string().email(),
-  role: z.enum(['owner', 'admin', 'staff']).default('owner'),
-  cognitoSub: z.string(),
-  createdAt: z.string().datetime(),
-  lastLoginAt: z.string().datetime().nullable().default(null),
-});
+// Tenant reservado para usuarios Integra-side (sales_admin, sales_rep,
+// integra_admin). Su `tenantId` NO es un UUID — es este literal — para que
+// el middleware `requireTenant` siga funcionando sin un nuevo path de auth.
+export const INTEGRA_TENANT_ID = 'INTEGRA' as const;
+
+export const UserRoleSchema = z.enum([
+  // Merchant-side — operan el back office del comercio.
+  'owner',
+  'admin',
+  'staff',
+  'merchant',
+  // Integra-side — operan la consola interna de Integra; tenantId = INTEGRA.
+  'sales_admin',
+  'sales_rep',
+  'integra_admin',
+]);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
+const userTenantIdSchema = z.union([
+  z.string().uuid(),
+  z.literal(INTEGRA_TENANT_ID),
+]);
+
+export const UserSchema = z
+  .object({
+    type: z.literal('USER'),
+    tenantId: userTenantIdSchema,
+    userId: z.string(), // Cognito sub
+    email: z.string().email(),
+    role: UserRoleSchema.default('owner'),
+    cognitoSub: z.string(),
+    // Solo para role='sales_rep': sub del sales_admin que lo reclutó.
+    salesAdminId: z.string().optional(),
+    createdAt: z.string().datetime(),
+    lastLoginAt: z.string().datetime().nullable().default(null),
+  })
+  .refine((u) => u.role !== 'sales_rep' || !!u.salesAdminId, {
+    message: 'salesAdminId is required when role is sales_rep',
+    path: ['salesAdminId'],
+  });
 export type User = z.infer<typeof UserSchema>;
 
 // =============================================================================
