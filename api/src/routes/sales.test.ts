@@ -170,6 +170,26 @@ describe('GET /admin/sales/reps/:repId — visibility', () => {
   });
 });
 
+describe('GET /admin/sales/kpis/me', () => {
+  it('integra_admin recibe totales globales (no 400)', async () => {
+    ctx.role = 'integra_admin';
+    ctx.userId = 'jorge';
+    // listAllSalesAdmins → listIntegraUsers filtrado a sales_admin
+    userRepo.listIntegraUsers.mockResolvedValueOnce([
+      { userId: 'admin-A', email: 'a@i', role: 'sales_admin' },
+    ]);
+    // computeAdminKpi(admin-A) → listSalesRepsByAdmin
+    userRepo.listSalesRepsByAdmin.mockResolvedValueOnce([]);
+
+    const app = await loadApp();
+    const res = await app.request('/kpis/me');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body).toHaveProperty('repsCount');
+    expect(body).toHaveProperty('mrrMxn');
+  });
+});
+
 describe('POST /admin/sales/merchants/:merchantId/assign', () => {
   it('sales_admin no puede asignar a rep ajeno', async () => {
     ctx.role = 'sales_admin';

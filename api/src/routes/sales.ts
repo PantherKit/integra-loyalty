@@ -323,7 +323,14 @@ sales.get('/kpis/admins', async (c) => {
   return c.json({ admins: kpis });
 });
 
-/** GET /admin/sales/kpis/me — KPI personal del caller (rep o admin). */
+/**
+ * GET /admin/sales/kpis/me — KPI del caller.
+ *  - sales_rep   → su KPI individual
+ *  - sales_admin → totales de su sub-fuerza
+ *  - integra_admin → totales globales (suma de todos los sales_admin).
+ *    Devuelve la misma forma que SalesAdminKpi para que la consola lo
+ *    consuma sin ramas especiales.
+ */
 sales.get('/kpis/me', async (c) => {
   const callerRole = c.get('userRole');
   const callerId = c.get('userId');
@@ -337,6 +344,18 @@ sales.get('/kpis/me', async (c) => {
   if (callerRole === 'sales_admin') {
     const kpi = await computeAdminKpi({ userId: callerId, email: callerEmail });
     return c.json(kpi);
+  }
+  if (callerRole === 'integra_admin') {
+    const admins = await listAllSalesAdmins();
+    const adminKpis = await Promise.all(admins.map((a) => computeAdminKpi(a)));
+    return c.json({
+      adminId: callerId,
+      adminEmail: callerEmail,
+      repsCount: adminKpis.reduce((s, k) => s + k.repsCount, 0),
+      merchantsCount: adminKpis.reduce((s, k) => s + k.merchantsCount, 0),
+      cardsIssuedCount: adminKpis.reduce((s, k) => s + k.cardsIssuedCount, 0),
+      mrrMxn: adminKpis.reduce((s, k) => s + k.mrrMxn, 0),
+    });
   }
   return c.json({ error: 'no_kpis_for_role', role: callerRole }, 400);
 });
