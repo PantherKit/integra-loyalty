@@ -12,6 +12,7 @@ import { decodeJwtClaims, clearToken, homeForRole } from '@/lib/api';
 export default function SalesAdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [role, setRole] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const claims = decodeJwtClaims();
@@ -24,6 +25,7 @@ export default function SalesAdminLayout({ children }: { children: React.ReactNo
       router.replace(homeForRole(claims.role));
       return;
     }
+    setRole(claims.role);
     setReady(true);
   }, [router]);
 
@@ -46,6 +48,11 @@ export default function SalesAdminLayout({ children }: { children: React.ReactNo
             <nav className="flex gap-4 text-sm text-zinc-600">
               <Link href="/sales/admin" className="hover:text-zinc-900">Vendedores</Link>
               <Link href="/sales/admin/reps/new" className="hover:text-zinc-900">Alta de rep</Link>
+              {role === 'integra_admin' && (
+                <Link href="/sales/admin/admins/new" className="hover:text-zinc-900">
+                  Alta de admin
+                </Link>
+              )}
             </nav>
           </div>
           <button

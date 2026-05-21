@@ -170,6 +170,69 @@ describe('GET /admin/sales/reps/:repId — visibility', () => {
   });
 });
 
+describe('POST /admin/sales/admins', () => {
+  it('integra_admin crea sales_admin', async () => {
+    ctx.role = 'integra_admin';
+    ctx.userId = 'jorge';
+    createCognitoMock.mockResolvedValueOnce({ cognitoSub: 'admin-sub-1' });
+    userRepo.putUser.mockResolvedValueOnce({ userId: 'admin-sub-1', email: 'max@i.local' });
+
+    const app = await loadApp();
+    const res = await app.request('/admins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'max@i.local' }),
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as any;
+    expect(body.admin.email).toBe('max@i.local');
+    expect(body.tempPassword).toBeTruthy();
+    expect(userRepo.putUser).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'sales_admin' })
+    );
+  });
+
+  it('sales_admin recibe 403 al intentar crear otro admin', async () => {
+    ctx.role = 'sales_admin';
+    ctx.userId = 'admin-A';
+
+    const app = await loadApp();
+    const res = await app.request('/admins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'x@i.local' }),
+    });
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('GET /admin/sales/admins', () => {
+  it('integra_admin lista solo sales_admins', async () => {
+    ctx.role = 'integra_admin';
+    ctx.userId = 'jorge';
+    userRepo.listIntegraUsers.mockResolvedValueOnce([
+      { userId: 'a1', email: 'a@i', role: 'sales_admin', createdAt: 'x', lastLoginAt: null },
+      { userId: 'r1', email: 'r@i', role: 'sales_rep', salesAdminId: 'a1' },
+      { userId: 'jorge', email: 'j@i', role: 'integra_admin' },
+    ]);
+
+    const app = await loadApp();
+    const res = await app.request('/admins');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.admins.map((a: any) => a.userId)).toEqual(['a1']);
+  });
+
+  it('sales_admin recibe 403', async () => {
+    ctx.role = 'sales_admin';
+    ctx.userId = 'admin-A';
+
+    const app = await loadApp();
+    const res = await app.request('/admins');
+    expect(res.status).toBe(403);
+  });
+});
+
 describe('GET /admin/sales/kpis/me', () => {
   it('integra_admin recibe totales globales (no 400)', async () => {
     ctx.role = 'integra_admin';

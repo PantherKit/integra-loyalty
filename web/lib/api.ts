@@ -287,6 +287,29 @@ export async function createSalesRep(input: {
   return request(`/admin/sales/reps`, { method: 'POST', body: JSON.stringify(input) });
 }
 
+export interface SalesAdmin {
+  userId: string;
+  email: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export async function listSalesAdmins(): Promise<{ admins: SalesAdmin[] }> {
+  return request(`/admin/sales/admins`);
+}
+
+export async function createSalesAdmin(input: {
+  email: string;
+}): Promise<{ admin: { userId: string; email: string }; tempPassword: string }> {
+  return request(`/admin/sales/admins`, { method: 'POST', body: JSON.stringify(input) });
+}
+
+/** Extrae el mensaje más útil de un error de la API (hint > error > genérico). */
+export function apiErrorMessage(e: unknown, fallback = 'Ocurrió un error'): string {
+  const err = e as { body?: { hint?: string; error?: string } };
+  return err?.body?.hint ?? err?.body?.error ?? fallback;
+}
+
 export async function listSalesMerchants(params: { repId?: string; adminId?: string } = {}): Promise<{
   merchants: Array<{ tenantId: string; name: string; slug: string; salesRepId?: string | null }>;
 }> {
