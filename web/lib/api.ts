@@ -375,3 +375,24 @@ export function decodeJwtClaims(): { sub?: string; email?: string; role?: string
     return null;
   }
 }
+
+/**
+ * Mapa rol → consola home. Único punto de verdad del routing por rol:
+ * lo usan el login (a dónde mandar tras autenticar) y los guards de cada
+ * layout (a dónde rebotar a un usuario que llegó a una sección ajena).
+ *
+ *  - sales_rep                 → /sales/rep
+ *  - sales_admin / integra_admin → /sales/admin
+ *  - owner / merchant / staff  → /dashboard  (back office del comercio)
+ */
+export function homeForRole(role?: string): string {
+  switch (role) {
+    case 'sales_rep':
+      return '/sales/rep';
+    case 'sales_admin':
+    case 'integra_admin':
+      return '/sales/admin';
+    default:
+      return '/dashboard';
+  }
+}

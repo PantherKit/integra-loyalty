@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { decodeJwtClaims, clearToken } from '@/lib/api';
+import { decodeJwtClaims, clearToken, homeForRole } from '@/lib/api';
 
 /**
  * Guard + shell mobile-first para sales_rep. Bottom-nav fija con 3 íconos.
@@ -21,7 +21,8 @@ export default function SalesRepLayout({ children }: { children: React.ReactNode
       return;
     }
     if (claims.role !== 'sales_rep' && claims.role !== 'integra_admin') {
-      router.replace('/dashboard');
+      // Rol ajeno a esta consola → lo mandamos a la suya, no a /dashboard a ciegas.
+      router.replace(homeForRole(claims.role));
       return;
     }
     setReady(true);
