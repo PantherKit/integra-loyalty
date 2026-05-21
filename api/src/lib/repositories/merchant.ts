@@ -1,4 +1,4 @@
-import { GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, QueryCommand, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE_NAME } from '../ddb';
 import { tenantPk, merchantSk, merchantSlugGsi2Pk } from '../keys';
 import { Merchant, UpdateMerchantInput } from '../entities';
@@ -66,5 +66,47 @@ export async function updateMerchant(tenantId: string, input: UpdateMerchantInpu
     })
   );
 
+  return res.Attributes as Merchant;
+}
+
+/**
+ * Lista los merchants asignados a un sales_rep dado.
+ *
+ * TODO(perf, ticket-03): hoy hace Scan + FilterExpression. Aceptable mientras
+ * el catálogo es chico (<200 merchants); al materializar KPIs conviene un GSI
+ * sobre salesRepId o una mini-entrada de asignación bajo
+ * TENANT#INTEGRA / SK=ASSIGN#REP#<repId>#<merchantId>.
+ */
+export async function listMerchantsByRep(salesRepId: string): Promise<Merchant[]> {
+  const res = await ddb.send(
+    new ScanCommand({
+      TableName: TABLE_NAME,
+      FilterExpression: '#type = :type AND salesRepId = :rep',
+      ExpressionAttributeNames: { '#type': 'type' },
+      ExpressionAttributeValues: { ':type': 'MERCHANT', ':rep': salesRepId },
+    })
+  );
+  return (res.Items as Merchant[]) ?? [];
+}
+
+/**
+ * Asigna o reasigna el salesRepId del merchant del tenant. Pasar null para
+ * desasignar (el merchant queda sin atribución de venta).
+ */
+export async function assignRepToMerchant(
+  tenantId: string,
+  salesRepId: string | null
+): Promise<Merchant> {
+  const now = new Date().toISOString();
+  const res = await ddb.send(
+    new UpdateCommand({
+      TableName: TABLE_NAME,
+      Key: { PK: tenantPk(tenantId), SK: merchantSk() },
+      UpdateExpression: 'SET salesRepId = :rep, updatedAt = :now',
+      ExpressionAttributeValues: { ':rep': salesRepId, ':now': now },
+      ConditionExpression: 'attribute_exists(PK)',
+      ReturnValues: 'ALL_NEW',
+    })
+  );
   return res.Attributes as Merchant;
 }

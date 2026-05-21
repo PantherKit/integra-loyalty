@@ -227,3 +227,151 @@ export function isSubscriptionRequired(e: unknown): boolean {
   const err = e as { status?: number; body?: { error?: string } };
   return err?.status === 402 && err?.body?.error === 'subscription_required';
 }
+
+// ============================================================================
+// Sales Org — fuerza de ventas Integra (tickets 02/03)
+// ============================================================================
+
+export interface SalesRep {
+  userId: string;
+  email: string;
+  salesAdminId?: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface SalesRepKpi {
+  repId: string;
+  repEmail: string;
+  merchantsCount: number;
+  cardsIssuedCount: number;
+  cardsActiveCount: number;
+  mrrMxn: number;
+  churnRiskCount: number;
+}
+
+export interface SalesAdminKpi {
+  adminId: string;
+  adminEmail: string;
+  repsCount: number;
+  merchantsCount: number;
+  cardsIssuedCount: number;
+  mrrMxn: number;
+}
+
+export interface SalesMerchantKpi {
+  merchantId: string;
+  name: string;
+  status: string;
+  subscriptionStatus?: string;
+  cardsCount: number;
+  mrrMxn: number;
+  lastActivityAt: string | null;
+}
+
+export type KpiWindow = '7d' | '30d' | '90d' | 'all';
+
+export async function listSalesReps(adminId?: string): Promise<{ reps: SalesRep[] }> {
+  const qs = adminId ? `?adminId=${encodeURIComponent(adminId)}` : '';
+  return request(`/admin/sales/reps${qs}`);
+}
+
+export async function getSalesRep(repId: string): Promise<SalesRep> {
+  return request(`/admin/sales/reps/${encodeURIComponent(repId)}`);
+}
+
+export async function createSalesRep(input: {
+  email: string;
+  salesAdminId?: string;
+}): Promise<{ rep: SalesRep; tempPassword: string }> {
+  return request(`/admin/sales/reps`, { method: 'POST', body: JSON.stringify(input) });
+}
+
+export async function listSalesMerchants(params: { repId?: string; adminId?: string } = {}): Promise<{
+  merchants: Array<{ tenantId: string; name: string; slug: string; salesRepId?: string | null }>;
+}> {
+  const qs = new URLSearchParams();
+  if (params.repId) qs.set('repId', params.repId);
+  if (params.adminId) qs.set('adminId', params.adminId);
+  const tail = qs.toString();
+  return request(`/admin/sales/merchants${tail ? '?' + tail : ''}`);
+}
+
+export async function assignMerchantRep(
+  merchantId: string,
+  salesRepId: string | null
+): Promise<{ merchant: { tenantId: string; salesRepId: string | null } }> {
+  return request(`/admin/sales/merchants/${encodeURIComponent(merchantId)}/assign`, {
+    method: 'POST',
+    body: JSON.stringify({ salesRepId }),
+  });
+}
+
+export async function getKpisReps(opts: { window?: KpiWindow; adminId?: string } = {}): Promise<{
+  window: KpiWindow;
+  reps: SalesRepKpi[];
+}> {
+  const qs = new URLSearchParams();
+  if (opts.window) qs.set('window', opts.window);
+  if (opts.adminId) qs.set('adminId', opts.adminId);
+  const tail = qs.toString();
+  return request(`/admin/sales/kpis/reps${tail ? '?' + tail : ''}`);
+}
+
+export async function getKpisAdmins(): Promise<{ admins: SalesAdminKpi[] }> {
+  return request(`/admin/sales/kpis/admins`);
+}
+
+export async function getKpisMe(window?: KpiWindow): Promise<SalesAdminKpi | SalesRepKpi> {
+  const qs = window ? `?window=${window}` : '';
+  return request(`/admin/sales/kpis/me${qs}`);
+}
+
+export async function getKpisMerchantsByRep(repId: string): Promise<{
+  repId: string;
+  merchants: SalesMerchantKpi[];
+}> {
+  return request(`/admin/sales/kpis/merchants/${encodeURIComponent(repId)}`);
+}
+
+export interface SalesMerchant {
+  tenantId: string;
+  name: string;
+  slug: string;
+  salesRepId?: string | null;
+}
+
+export async function createSalesMerchant(input: {
+  merchantName: string;
+  industry: string;
+  ownerEmail: string;
+  salesRepId?: string;
+}): Promise<{
+  tenant: { tenantId: string; slug: string };
+  merchant: SalesMerchant;
+  owner: { userId: string; email: string };
+  tempPassword: string;
+}> {
+  return request(`/admin/sales/merchants`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+/** Decodifica payload del JWT (NO verifica firma — solo lectura cliente para guards). */
+export function decodeJwtClaims(): { sub?: string; email?: string; role?: string } | null {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = token.split('.')[1];
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const claims = JSON.parse(json) as Record<string, unknown>;
+    return {
+      sub: claims.sub as string | undefined,
+      email: claims.email as string | undefined,
+      role: claims['custom:role'] as string | undefined,
+    };
+  } catch {
+    return null;
+  }
+}

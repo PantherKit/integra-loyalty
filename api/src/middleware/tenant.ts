@@ -57,6 +57,13 @@ export async function requireTenant(c: Context, next: Next) {
 export const MERCHANT_ROLES = ['owner', 'merchant', 'staff', 'integra_admin'] as const;
 
 /**
+ * Roles internos de Integra. Su JWT lleva tenantId = INTEGRA_TENANT_ID y
+ * gestionan la fuerza de ventas / consola interna. `integra_admin` aparece
+ * en ambas listas porque también puede operar el back office del comercio.
+ */
+export const INTEGRA_ROLES = ['sales_admin', 'sales_rep', 'integra_admin'] as const;
+
+/**
  * Autorización por rol (hallazgo C2). Debe ir DESPUÉS de requireTenant.
  * Bloquea tokens que no sean del comercio (p.ej. un futuro end_customer)
  * en operaciones sensibles como stamp/redeem.

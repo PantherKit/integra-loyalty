@@ -26,6 +26,13 @@ export interface CreateCognitoUserParams {
   email: string;
   password: string;
   tenantId: string;
+  /**
+   * Rol del custom:role. Default 'owner' para preservar el comportamiento
+   * legacy del signup de merchants. Para users Integra-side (sales_admin,
+   * sales_rep, integra_admin) pasar el rol correspondiente y tenantId =
+   * INTEGRA_TENANT_ID.
+   */
+  role?: string;
 }
 
 export interface CreateCognitoUserResult {
@@ -46,7 +53,7 @@ export async function createCognitoUser(p: CreateCognitoUserParams): Promise<Cre
         { Name: 'email', Value: p.email },
         { Name: 'email_verified', Value: 'true' },
         { Name: 'custom:tenantId', Value: p.tenantId },
-        { Name: 'custom:role', Value: 'owner' },
+        { Name: 'custom:role', Value: p.role ?? 'owner' },
       ],
     })
   );
