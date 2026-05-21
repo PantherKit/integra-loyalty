@@ -10,6 +10,7 @@ import {
   apiErrorMessage,
   type SalesAdmin,
 } from '@/lib/api';
+import ShareAccess from '@/components/ShareAccess';
 
 export default function NewRepPage() {
   const router = useRouter();
@@ -61,17 +62,9 @@ export default function NewRepPage() {
       <div className="max-w-lg">
         <h1 className="text-xl font-bold text-zinc-900 mb-2">Vendedor creado</h1>
         <p className="text-sm text-zinc-600 mb-4">
-          Comparte estas credenciales por canal seguro. La contraseña temporal solo se muestra una vez.
+          Comparte el acceso con el vendedor. Al entrar, el sistema lo lleva directo a su panel.
         </p>
-        <div className="bg-amber-50 border border-amber-200 rounded p-4 text-sm space-y-2">
-          <div>
-            <span className="text-zinc-500">Email:</span> <span className="font-mono">{email}</span>
-          </div>
-          <div>
-            <span className="text-zinc-500">Contraseña temporal:</span>{' '}
-            <span className="font-mono select-all">{created.tempPassword}</span>
-          </div>
-        </div>
+        <ShareAccess email={email} tempPassword={created.tempPassword} kind="vendedor" />
         <div className="mt-6 flex gap-3">
           <button
             onClick={() => router.push(`/sales/admin/reps?id=${encodeURIComponent(created.userId)}`)}
