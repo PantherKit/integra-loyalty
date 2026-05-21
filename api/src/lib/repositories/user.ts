@@ -1,7 +1,7 @@
-import { QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE_NAME } from '../ddb';
 import { tenantPk, userSk, emailGsi1Pk } from '../keys';
-import { User, INTEGRA_TENANT_ID } from '../entities';
+import { User, UserSchema, INTEGRA_TENANT_ID } from '../entities';
 
 /**
  * AP-2 — Lookup User por email (para magic-link login). Usa GSI1.
@@ -78,4 +78,35 @@ export async function listIntegraUsers(): Promise<User[]> {
 export async function listSalesRepsByAdmin(salesAdminId: string): Promise<User[]> {
   const all = await listIntegraUsers();
   return all.filter((u) => u.role === 'sales_rep' && u.salesAdminId === salesAdminId);
+}
+
+/**
+ * Persiste un User en DynamoDB. Usado por el flujo de alta de sales_rep y
+ * cualquier alta Integra-side (sales_admin, integra_admin) — el caller ya
+ * creó el user en Cognito y nos pasa el cognitoSub.
+ */
+export async function putUser(input: Omit<User, 'createdAt' | 'lastLoginAt'> & {
+  createdAt?: string;
+  lastLoginAt?: string | null;
+}): Promise<User> {
+  const now = new Date().toISOString();
+  const user = UserSchema.parse({
+    ...input,
+    createdAt: input.createdAt ?? now,
+    lastLoginAt: input.lastLoginAt ?? null,
+  });
+  await ddb.send(
+    new PutCommand({
+      TableName: TABLE_NAME,
+      Item: {
+        PK: tenantPk(user.tenantId),
+        SK: userSk(user.userId),
+        GSI1PK: emailGsi1Pk(user.email),
+        GSI1SK: userSk(user.userId),
+        ...user,
+      },
+      ConditionExpression: 'attribute_not_exists(PK)',
+    })
+  );
+  return user;
 }
