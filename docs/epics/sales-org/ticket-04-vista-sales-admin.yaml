@@ -1,0 +1,33 @@
+intencion: >
+  Panel del sales_admin: tabla de sus vendedores con KPIs por rep, drill-down al
+  detalle de cada rep con sus comercios, formulario para alta de un rep nuevo, y
+  acción de reasignación de un merchant a otro rep dentro de su sub-fuerza.
+
+repo: ~/Documents/IntegraGroupAI/integra-loyalty
+rama_base: main
+
+contexto:
+  - El front es Next.js 14 App Router en web/app/, Tailwind, componentes shadcn-style. El dashboard del merchant vive en web/app/dashboard/* — no mezclar con esta vista nueva.
+  - Convención decidida en EPIC.md: estas vistas Integra-side viven bajo web/app/sales/admin/* (separadas del /dashboard del merchant). Hay que protegerlas server-side: en el layout o middleware Next, verificar que el JWT del session tenga `role == 'sales_admin'`, si no, redirect a /login o a /dashboard según corresponda.
+  - APIs consumibles ya existen (ticket-02 y ticket-03): /admin/sales/reps, /admin/sales/merchants, /admin/sales/kpis/reps, /admin/sales/kpis/me. Se accede con el Bearer token que ya maneja la web — ver web/app/dashboard/* para el patrón.
+  - El estilo de tabla y stat-cards puede tomar como referencia web/app/dashboard/programs/ (tabla con acciones) y web/app/dashboard/page.tsx (KPIs en header).
+
+aceptacion:
+  - Ruta `/sales/admin` — vista principal: header con KPIs personales del admin (de /admin/sales/kpis/me), debajo tabla de reps con columnas { rep, comercios, tarjetas emitidas, MRR atribuible, churn risk }. Cada fila clickeable abre drill-down.
+  - Ruta `/sales/admin/reps/[repId]` — detalle del rep: KPIs específicos + tabla de sus merchants con { nombre, status, suscripción, tarjetas, última actividad }. Acción "Reasignar" por merchant que abre modal con dropdown de los demás reps del admin.
+  - Ruta `/sales/admin/reps/new` — formulario simple: email del rep, nombre. Al submit llama POST /admin/sales/reps (el salesAdminId se infiere del JWT en el server) y redirige al detalle del rep recién creado.
+  - Layout server-side `web/app/sales/admin/layout.tsx` que verifica role; usuarios con role distinto reciben redirect a /login.
+  - Todas las llamadas a la API pasan por una función de fetch helper que ya existe (o se crea bajo web/lib/api.ts si no), con manejo de 401 → redirect a /login y 403 → mensaje "No autorizado" inline.
+  - Estados de carga (skeleton/spinner) y de error visibles en cada vista. Mensajes en español.
+  - Build de Next y lint verdes; lighthouse manual del flujo principal no requerido pero la tabla debe paginar visual a 50 filas (sin paginación server-side: filtra cliente-side, justificado para <200 reps).
+
+fuera_de_alcance:
+  - No vista de sales_rep (eso es ticket-05).
+  - No vista de integra_admin global con jerarquía completa (queda para otra épica).
+  - No flujo de baja de rep ni edición de email (solo alta + reasignación de merchants).
+  - No gráficos / charts. Solo tablas y KPI cards de texto. (Charts pueden venir después.)
+  - No notificaciones / toasts para eventos asíncronos.
+
+verificaciones:
+  - cd web && npm run lint
+  - cd web && npm run build

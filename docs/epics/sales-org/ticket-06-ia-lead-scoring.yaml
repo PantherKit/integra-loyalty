@@ -1,0 +1,38 @@
+intencion: >
+  Módulo de IA que, dado el contexto de un sales_rep o sales_admin (sus comercios,
+  sus KPIs, su actividad), devuelve dos cosas: (1) un ranking de comercios que el
+  rep debe atender hoy con razón concreta (churn risk, oportunidad de upsell, sin
+  actividad reciente), y (2) una "next best action" en texto natural para los 3-5
+  primeros. Este ticket es opcional / último: si los anteriores entregan valor, el
+  product manager decide cuándo activarlo.
+
+repo: ~/Documents/IntegraGroupAI/integra-loyalty
+rama_base: main
+
+contexto:
+  - El backend ya expone los KPIs deterministas (ticket-03) en /admin/sales/kpis/*. Esos endpoints calculan churnRiskCount con heurística simple — esta capa IA refina y prioriza.
+  - El stack ya tiene Bedrock disponible en la cuenta AWS (us-east-1, 041876399045). Si Bedrock no está habilitado, el ticket lo habilita primero. Modelo objetivo: Claude Haiku 4.5 por costo/latencia para este caso de uso (clasificación + redacción corta).
+  - El módulo debe ser determinista en la parte de reglas (input → mismo input → misma salida estructurada) y solo recurrir al LLM para la redacción de la razón en español. Estructura: rules → score → LLM solo para wording.
+  - La salida debe ser cacheable por (repId, fecha del día) — recomputar máximo 1 vez por día por rep, salvo flush manual. Cache en DynamoDB con TTL 24h.
+  - Prompt caching de Anthropic API debe usarse si se decide ir vía API directa en lugar de Bedrock (cache del contexto del producto + las reglas, no de los datos del rep).
+
+aceptacion:
+  - Endpoint `GET /admin/sales/ai/priorities/me` — devuelve para el caller (rep o admin) un array ordenado por score descendente: `[{ merchantId, name, score, signal, reason }]` donde signal es uno de `churn_risk | upsell_opportunity | dormant | new_lead_followup` y reason es texto ≤140 chars generado en español.
+  - Endpoint `GET /admin/sales/ai/priorities/reps/:repId` — igual al anterior pero para un rep específico (solo accesible si el caller es sales_admin del rep o integra_admin).
+  - Las reglas deterministas que calculan el score están en api/src/lib/sales-ai/rules.ts con tests vitest exhaustivos: dado tal input → tal score. Documentadas en docs/architecture/sales-ai-rules.md.
+  - El LLM solo se invoca para generar el campo `reason` y solo si la regla activó el signal. Hay un fallback determinista (string canned por signal) si el LLM falla.
+  - Cache en DynamoDB con TTL — segunda llamada en el mismo día devuelve el resultado cacheado sin invocar al LLM. Hay un `?fresh=true` para forzar recompute (solo integra_admin).
+  - Tests vitest cubren: las reglas; cache hit / miss; fallback cuando LLM falla; visibilidad (sales_admin no puede pedir priorities de un rep ajeno).
+  - Costo modelado en el ADR: con N reps × 1 recompute/día × 5 merchants/rep × ~200 tokens output, el costo en Haiku 4.5 es trivial — documentarlo en docs/adr/007-sales-ai-cost.md.
+
+fuera_de_alcance:
+  - No entrenar modelo propio. Solo usar LLM hosted.
+  - No envío automático de la priority list por email/WhatsApp — solo endpoint que las vistas consumen.
+  - No personalización por rep ("Daniela suele cerrar cafeterías" — modelo de preferencias por rep): primer corte usa solo señales objetivas del comercio.
+  - No predicción de revenue ni LTV. Solo priorización del día.
+  - No A/B testing del prompt.
+
+verificaciones:
+  - cd api && npm run lint
+  - cd api && npx vitest run
+  - cd infra && npm run synth

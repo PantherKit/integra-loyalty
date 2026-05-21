@@ -1,0 +1,37 @@
+intencion: >
+  Endpoints que devuelven métricas agregadas de la fuerza de ventas: por rep
+  (cuántos comercios cerró, cuántas tarjetas se emitieron en esos comercios, MRR
+  atribuible), por sales_admin (totales de sus reps), y globales (para integra_admin).
+  Son la base de datos que consumen las vistas y la capa de IA.
+
+repo: ~/Documents/IntegraGroupAI/integra-loyalty
+rama_base: main
+
+contexto:
+  - Las entidades MerchantSchema y el cálculo de MRR ya existen — los Stripe Products están en api/src/lib/stripe.ts con prices integra_basico/pro/multi. El MRR atribuible se computa de la suma de las suscripciones activas de los merchants asignados al rep.
+  - Las tarjetas (cards) y la actividad de stamp/redeem viven en api/src/lib/repositories/card.ts y api/src/lib/repositories/transaction.ts. El conteo de "tarjetas emitidas" es count de cards por merchant.
+  - Para que las agregaciones sean baratas (no escanear DynamoDB en cada request) este ticket puede materializar counts on-write con atomic counters en la entidad Merchant o en una entidad nueva `SalesKpiSnapshot` por rep — la decisión queda al implementer, pero debe documentarse en un ADR corto bajo docs/adr/.
+  - Las relaciones salesRepId/salesAdminId ya están en User y Merchant después de ticket-01.
+  - El filtrado por ventana temporal (últimos 7/30/90 días) usa la timestamp de las cards y de las suscripciones; no es necesario rangos arbitrarios para esta primera versión.
+
+aceptacion:
+  - Endpoint `GET /admin/sales/kpis/reps` — para cada rep visible al caller devuelve: { repId, repEmail, merchantsCount, cardsIssuedCount, cardsActiveCount, mrrMxn, churnRiskCount }. Soporta query `?window=7d|30d|90d|all` (default 30d) y `?adminId=` (solo integra_admin).
+  - Endpoint `GET /admin/sales/kpis/admins` — totales por sales_admin: { adminId, adminEmail, repsCount, merchantsCount, cardsIssuedCount, mrrMxn }. Solo accesible a integra_admin.
+  - Endpoint `GET /admin/sales/kpis/me` — KPI del propio sales_rep o sales_admin del JWT (objeto unitario, no lista). Útil para el header de las vistas 04 y 05.
+  - Endpoint `GET /admin/sales/kpis/merchants/:repId` — desglose por merchant del rep dado: { merchantId, name, status, cardsCount, mrrMxn, lastActivityAt }. Verifica visibilidad jerárquica.
+  - El cómputo de MRR usa los Stripe billingPlan de las suscripciones activas — basico=349, pro=649, multi=1190 MXN según docs/pricing.md.
+  - Si se elige materializar counts on-write, queda un ADR (docs/adr/006-sales-kpi-aggregation.md) que describe la decisión y los counters específicos.
+  - Tests vitest con fixtures: un sales_admin con 3 reps, cada uno con N merchants y M cards, valida que los totales sean consistentes a través de los 3 endpoints (suma de reps == admin == filtro global).
+  - El churnRiskCount viene de la heurística simple: merchant con subscription past_due o sin actividad en últimos 14 días. La heurística IA real va en ticket-06; este ticket usa solo la heurística determinista.
+
+fuera_de_alcance:
+  - No predicciones IA (eso es ticket-06).
+  - No comisiones, no cálculos financieros para el vendedor.
+  - No exportación CSV ni reporting batch — solo endpoints JSON.
+  - No dashboards (eso es ticket-04/05).
+  - No alertas / notificaciones cuando cambian los KPIs.
+
+verificaciones:
+  - cd api && npm run lint
+  - cd api && npx vitest run
+  - cd infra && npm run synth
