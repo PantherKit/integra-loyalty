@@ -1,0 +1,57 @@
+intencion: >
+  Pulir la consola del admin de Sales Org (layout, panel principal y detalle
+  de vendedor): branding Integra, mejor jerarquía visual de KPIs y tablas,
+  responsive para tablet/móvil, y navegación más clara. Sin tocar lógica.
+
+repo: ~/Documents/IntegraGroupAI/integra-loyalty
+rama_base: main
+
+contexto:
+  - Front Next.js 14 App Router + Tailwind. La consola admin vive en web/app/sales/admin/.
+  - Archivos de este ticket (SOLO estos): web/app/sales/admin/layout.tsx,
+    web/app/sales/admin/page.tsx, web/app/sales/admin/reps/page.tsx.
+  - layout.tsx: header con nav (Vendedores / Alta de Vendedor / Alta de Admin) +
+    chip de rol (Super Admin / Admin) + botón Salir. Guard de rol en useEffect.
+  - page.tsx: KPIs personales arriba (KpiCard de texto plano) + tabla de vendedores
+    con selector de ventana temporal.
+  - reps/page.tsx: detalle de un vendedor (?id=) con su cartera de comercios en tabla.
+  - La data viene de web/lib/api.ts — NO modificar ese archivo, solo consumirlo igual.
+  - El build es `output: export` estático: no agregar dynamic routes ni server components nuevos.
+
+aceptacion:
+  - layout.tsx: header con el logo Integra (<IntegraLogo/>), nav con estado activo
+    visible (link de la sección actual resaltado en verde Integra), chip de rol
+    conservado. En móvil el nav colapsa a un menú usable (no se desborda).
+  - page.tsx: KPI cards rediseñadas con jerarquía clara (label pequeño, valor
+    grande, ícono o acento verde). La tabla de vendedores en móvil colapsa a
+    tarjetas apiladas (sin scroll horizontal). Badges de color para churn risk.
+  - reps/page.tsx: detalle con mejor jerarquía, tabla de comercios responsive
+    (tarjetas en móvil), badges de suscripción con color.
+  - Empty states con ícono + texto + CTA en las tablas vacías.
+  - Estados de carga con skeletons que imiten el layout, no spinners pelones.
+  - Se respeta la guía de branding (abajo). Lógica, rutas y llamadas API intactas.
+  - `cd web && npm run lint` y `cd web && npm run build` verdes.
+
+fuera_de_alcance:
+  - No tocar web/lib/api.ts ni el backend.
+  - No crear componentes nuevos en web/components/ (mantener componentes
+    locales a estas páginas para no colisionar con otros tickets en paralelo).
+  - No tocar archivos de las consolas de alta ni del vendedor (otros tickets).
+  - No cambiar la familia tipográfica ni agregar dependencias.
+
+verificaciones:
+  - cd web && npm run lint
+  - cd web && npm run build
+
+branding: >
+  GUÍA DE BRANDING (idéntica en los 3 tickets de la épica):
+  - Verde Integra: primario #4f7d2a, hover/oscuro #3d6520. Solo en CTAs
+    primarios, links/tabs activos e indicadores positivos. No saturar.
+  - Neutros: fondo zinc-50/blanco, texto zinc-900/zinc-600, bordes zinc-200.
+  - Logo: usar el componente existente web/components/IntegraLogo.tsx en headers.
+  - Tipografía: la que ya usa la app — NO cambiarla.
+  - Badges: verde=activo/positivo, ámbar=warning/past_due, rojo=churn/error, zinc=neutro.
+  - Responsive: mobile-first; en móvil las tablas colapsan a tarjetas apiladas;
+    targets táctiles >=44px; nada de scroll horizontal.
+  - Empty states: ícono + título + descripción + CTA.
+  - Loading: skeletons que imiten el layout final.

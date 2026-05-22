@@ -1,0 +1,56 @@
+intencion: >
+  Pulir los flujos de alta de Sales Org (alta de vendedor, alta de admin y la
+  tarjeta de credenciales ShareAccess): branding Integra, formularios más
+  claros, responsive y mejor feedback. Sin tocar lógica.
+
+repo: ~/Documents/IntegraGroupAI/integra-loyalty
+rama_base: main
+
+contexto:
+  - Front Next.js 14 App Router + Tailwind.
+  - Archivos de este ticket (SOLO estos): web/app/sales/admin/reps/new/page.tsx,
+    web/app/sales/admin/admins/new/page.tsx, web/components/ShareAccess.tsx.
+  - reps/new: formulario de alta de vendedor (un campo email) + pantalla de
+    éxito que muestra <ShareAccess/>.
+  - admins/new: formulario de alta de admin (un campo email) + pantalla de éxito
+    con <ShareAccess/>. Guard: solo integra_admin (Super Admin).
+  - ShareAccess.tsx: tarjeta con URL de login + email + contraseña temporal +
+    botones "Compartir acceso" / "Copiar credenciales". prop `kind` es
+    'Vendedor' | 'Admin'.
+  - La data viene de web/lib/api.ts — NO modificar ese archivo.
+  - Build `output: export` estático.
+
+aceptacion:
+  - Ambos formularios con branding Integra: header con logo, CTA primario en
+    verde Integra, layout centrado y respirado, validación visible.
+  - Formularios usables en móvil: inputs grandes (>=44px), una columna, sin zoom.
+  - Pantalla de éxito (vendedor/admin creado) clara y celebratoria pero sobria;
+    ShareAccess rediseñado con mejor jerarquía — la contraseña temporal y los
+    botones de compartir destacan; aviso de seguridad visible.
+  - Estados: botón con loading inline, errores en bloque rojo legible (ya se usa
+    apiErrorMessage — conservarlo).
+  - Se respeta la guía de branding (abajo). Lógica, validaciones y llamadas API intactas.
+  - `cd web && npm run lint` y `cd web && npm run build` verdes.
+
+fuera_de_alcance:
+  - No tocar web/lib/api.ts ni el backend.
+  - No crear otros componentes nuevos en web/components/ (ShareAccess.tsx SÍ se
+    puede editar — es exclusivo de este ticket; pero no agregar más).
+  - No tocar la consola admin principal ni la del vendedor (otros tickets).
+  - No cambiar la familia tipográfica ni agregar dependencias.
+
+verificaciones:
+  - cd web && npm run lint
+  - cd web && npm run build
+
+branding: >
+  GUÍA DE BRANDING (idéntica en los 3 tickets de la épica):
+  - Verde Integra: primario #4f7d2a, hover/oscuro #3d6520. Solo en CTAs
+    primarios, links/tabs activos e indicadores positivos. No saturar.
+  - Neutros: fondo zinc-50/blanco, texto zinc-900/zinc-600, bordes zinc-200.
+  - Logo: usar el componente existente web/components/IntegraLogo.tsx en headers.
+  - Tipografía: la que ya usa la app — NO cambiarla.
+  - Badges: verde=activo/positivo, ámbar=warning/past_due, rojo=churn/error, zinc=neutro.
+  - Responsive: mobile-first; targets táctiles >=44px; una columna en móvil.
+  - Empty states: ícono + título + descripción + CTA.
+  - Loading: skeletons o loading inline en botones, no spinners sueltos.
