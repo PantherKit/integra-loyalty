@@ -12,7 +12,6 @@ import { decodeJwtClaims, clearToken, homeForRole } from '@/lib/api';
 export default function SalesAdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [role, setRole] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const claims = decodeJwtClaims();
@@ -20,12 +19,11 @@ export default function SalesAdminLayout({ children }: { children: React.ReactNo
       router.replace('/login');
       return;
     }
-    if (claims.role !== 'sales_admin' && claims.role !== 'integra_admin') {
+    if (claims.role !== 'integra_admin') {
       // Rol ajeno a esta consola → lo mandamos a la suya, no a /dashboard a ciegas.
       router.replace(homeForRole(claims.role));
       return;
     }
-    setRole(claims.role);
     setReady(true);
   }, [router]);
 
@@ -47,12 +45,8 @@ export default function SalesAdminLayout({ children }: { children: React.ReactNo
             </Link>
             <nav className="flex gap-4 text-sm text-zinc-600">
               <Link href="/sales/admin" className="hover:text-zinc-900">Vendedores</Link>
-              <Link href="/sales/admin/reps/new" className="hover:text-zinc-900">Alta de rep</Link>
-              {role === 'integra_admin' && (
-                <Link href="/sales/admin/admins/new" className="hover:text-zinc-900">
-                  Alta de admin
-                </Link>
-              )}
+              <Link href="/sales/admin/reps/new" className="hover:text-zinc-900">Alta de vendedor</Link>
+              <Link href="/sales/admin/admins/new" className="hover:text-zinc-900">Alta de admin</Link>
             </nav>
           </div>
           <button

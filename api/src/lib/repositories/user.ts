@@ -72,18 +72,10 @@ export async function listIntegraUsers(): Promise<User[]> {
 }
 
 /**
- * Lista los sales_rep asignados a un sales_admin dado. Filtra en aplicación
- * porque el conjunto de users Integra-side cabe holgado en memoria.
- */
-export async function listSalesRepsByAdmin(salesAdminId: string): Promise<User[]> {
-  const all = await listIntegraUsers();
-  return all.filter((u) => u.role === 'sales_rep' && u.salesAdminId === salesAdminId);
-}
-
-/**
- * Persiste un User en DynamoDB. Usado por el flujo de alta de sales_rep y
- * cualquier alta Integra-side (sales_admin, integra_admin) — el caller ya
- * creó el user en Cognito y nos pasa el cognitoSub.
+ * Persiste un User en DynamoDB. Usado por las altas Integra-side
+ * (integra_admin, sales_rep) — el caller ya creó el user en Cognito y nos
+ * pasa el cognitoSub. La visibilidad por subárbol se computa con `createdBy`
+ * + los helpers de lib/sales-tree.ts.
  */
 export async function putUser(input: Omit<User, 'createdAt' | 'lastLoginAt'> & {
   createdAt?: string;

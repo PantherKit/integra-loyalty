@@ -9,38 +9,45 @@ const baseUser = {
   createdAt: '2026-05-20T00:00:00.000Z',
 };
 
-describe('UserSchema — Sales Org roles', () => {
-  it('acepta sales_admin con tenantId = INTEGRA y sin salesAdminId', () => {
+describe('UserSchema — Sales Org roles (modelo de 2 roles)', () => {
+  it('acepta integra_admin raíz (tenantId INTEGRA, sin createdBy)', () => {
     const parsed = UserSchema.parse({
+      ...baseUser,
+      tenantId: INTEGRA_TENANT_ID,
+      role: 'integra_admin',
+    });
+    expect(parsed.role).toBe('integra_admin');
+    expect(parsed.createdBy).toBeUndefined();
+  });
+
+  it('acepta sales_rep con createdBy (quién lo creó)', () => {
+    const parsed = UserSchema.parse({
+      ...baseUser,
+      tenantId: INTEGRA_TENANT_ID,
+      role: 'sales_rep',
+      createdBy: 'admin-sub-456',
+    });
+    expect(parsed.role).toBe('sales_rep');
+    expect(parsed.createdBy).toBe('admin-sub-456');
+  });
+
+  it('acepta integra_admin con createdBy (admin creado por otro admin)', () => {
+    const parsed = UserSchema.parse({
+      ...baseUser,
+      tenantId: INTEGRA_TENANT_ID,
+      role: 'integra_admin',
+      createdBy: 'admin-raiz',
+    });
+    expect(parsed.createdBy).toBe('admin-raiz');
+  });
+
+  it('rechaza el rol sales_admin eliminado', () => {
+    const res = UserSchema.safeParse({
       ...baseUser,
       tenantId: INTEGRA_TENANT_ID,
       role: 'sales_admin',
     });
-    expect(parsed.role).toBe('sales_admin');
-    expect(parsed.salesAdminId).toBeUndefined();
-  });
-
-  it('rechaza sales_rep cuando falta salesAdminId', () => {
-    const res = UserSchema.safeParse({
-      ...baseUser,
-      tenantId: INTEGRA_TENANT_ID,
-      role: 'sales_rep',
-    });
     expect(res.success).toBe(false);
-    if (!res.success) {
-      expect(res.error.issues[0].path).toContain('salesAdminId');
-    }
-  });
-
-  it('acepta sales_rep con salesAdminId presente', () => {
-    const parsed = UserSchema.parse({
-      ...baseUser,
-      tenantId: INTEGRA_TENANT_ID,
-      role: 'sales_rep',
-      salesAdminId: 'admin-sub-456',
-    });
-    expect(parsed.role).toBe('sales_rep');
-    expect(parsed.salesAdminId).toBe('admin-sub-456');
   });
 
   it('acepta merchant-side users con tenantId UUID', () => {
