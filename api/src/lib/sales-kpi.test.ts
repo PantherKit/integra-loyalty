@@ -80,8 +80,12 @@ describe('computeRepKpi', () => {
   });
 });
 
-describe('computeSubtreeKpi', () => {
-  it('suma KPIs de un conjunto de vendedores', async () => {
+describe('computeAdminKpi', () => {
+  it('suma KPIs de todos los reps del admin', async () => {
+    userRepo.listSalesRepsByAdmin.mockResolvedValueOnce([
+      { userId: 'r1', email: 'a@b', role: 'sales_rep', salesAdminId: 'admin-A' },
+      { userId: 'r2', email: 'c@d', role: 'sales_rep', salesAdminId: 'admin-A' },
+    ]);
     merchantRepo.listMerchantsByRep
       .mockResolvedValueOnce([{ tenantId: 't-1', updatedAt: new Date().toISOString() }])
       .mockResolvedValueOnce([{ tenantId: 't-2', updatedAt: new Date().toISOString() }]);
@@ -92,24 +96,10 @@ describe('computeSubtreeKpi', () => {
       updatedAt: new Date().toISOString(),
     });
 
-    const { computeSubtreeKpi } = await import('./sales-kpi');
-    const kpi = await computeSubtreeKpi([
-      { userId: 'r1', email: 'a@b' },
-      { userId: 'r2', email: 'c@d' },
-    ]);
+    const { computeAdminKpi } = await import('./sales-kpi');
+    const kpi = await computeAdminKpi({ userId: 'admin-A', email: 'a@i.local' });
     expect(kpi.repsCount).toBe(2);
     expect(kpi.merchantsCount).toBe(2);
     expect(kpi.mrrMxn).toBe(349 + 349);
-  });
-
-  it('subárbol vacío → todos los totales en cero', async () => {
-    const { computeSubtreeKpi } = await import('./sales-kpi');
-    const kpi = await computeSubtreeKpi([]);
-    expect(kpi).toEqual({
-      repsCount: 0,
-      merchantsCount: 0,
-      cardsIssuedCount: 0,
-      mrrMxn: 0,
-    });
   });
 });

@@ -6,6 +6,7 @@
 
 import { countCardsByTenant } from './repositories/card';
 import { listMerchantsByRep } from './repositories/merchant';
+import { listSalesRepsByAdmin, listIntegraUsers } from './repositories/user';
 import { getTenant } from './repositories/tenant';
 import { Merchant } from './entities';
 
@@ -34,8 +35,9 @@ export interface RepKpi {
   churnRiskCount: number;
 }
 
-/** Totales agregados de un subárbol de vendedores. */
-export interface SubtreeKpi {
+export interface AdminKpi {
+  adminId: string;
+  adminEmail: string;
   repsCount: number;
   merchantsCount: number;
   cardsIssuedCount: number;
@@ -104,21 +106,27 @@ export async function computeRepKpi(
   };
 }
 
-/**
- * Suma los KPIs de un conjunto de vendedores (el subárbol de un admin).
- * El caller decide qué reps pasar — la visibilidad por árbol se resuelve
- * en routes/sales.ts con lib/sales-tree.ts.
- */
-export async function computeSubtreeKpi(
-  reps: { userId: string; email: string }[]
-): Promise<SubtreeKpi> {
+export async function computeAdminKpi(admin: {
+  userId: string;
+  email: string;
+}): Promise<AdminKpi> {
+  const reps = await listSalesRepsByAdmin(admin.userId);
   const repKpis = await Promise.all(reps.map((r) => computeRepKpi(r, 'all')));
   return {
+    adminId: admin.userId,
+    adminEmail: admin.email,
     repsCount: reps.length,
     merchantsCount: repKpis.reduce((s, k) => s + k.merchantsCount, 0),
     cardsIssuedCount: repKpis.reduce((s, k) => s + k.cardsIssuedCount, 0),
     mrrMxn: repKpis.reduce((s, k) => s + k.mrrMxn, 0),
   };
+}
+
+export async function listAllSalesAdmins(): Promise<{ userId: string; email: string }[]> {
+  const all = await listIntegraUsers();
+  return all
+    .filter((u) => u.role === 'sales_admin')
+    .map((u) => ({ userId: u.userId, email: u.email }));
 }
 
 export async function computeMerchantsKpisForRep(repId: string): Promise<MerchantKpi[]> {

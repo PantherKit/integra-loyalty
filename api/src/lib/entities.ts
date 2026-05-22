@@ -95,7 +95,7 @@ export const UserRoleSchema = z.enum([
   'staff',
   'merchant',
   // Integra-side — operan la consola interna de Integra; tenantId = INTEGRA.
-  // Modelo de 2 roles: integra_admin (admin) y sales_rep (vendedor).
+  'sales_admin',
   'sales_rep',
   'integra_admin',
 ]);
@@ -106,20 +106,23 @@ const userTenantIdSchema = z.union([
   z.literal(INTEGRA_TENANT_ID),
 ]);
 
-export const UserSchema = z.object({
-  type: z.literal('USER'),
-  tenantId: userTenantIdSchema,
-  userId: z.string(), // Cognito sub
-  email: z.string().email(),
-  role: UserRoleSchema.default('owner'),
-  cognitoSub: z.string(),
-  // userId del admin que creó a este usuario. Forma el árbol de la fuerza
-  // de ventas: un admin ve su subárbol (lo que él y sus descendientes
-  // crearon). Ausente/null solo en el admin raíz.
-  createdBy: z.string().nullable().optional(),
-  createdAt: z.string().datetime(),
-  lastLoginAt: z.string().datetime().nullable().default(null),
-});
+export const UserSchema = z
+  .object({
+    type: z.literal('USER'),
+    tenantId: userTenantIdSchema,
+    userId: z.string(), // Cognito sub
+    email: z.string().email(),
+    role: UserRoleSchema.default('owner'),
+    cognitoSub: z.string(),
+    // Solo para role='sales_rep': sub del sales_admin que lo reclutó.
+    salesAdminId: z.string().optional(),
+    createdAt: z.string().datetime(),
+    lastLoginAt: z.string().datetime().nullable().default(null),
+  })
+  .refine((u) => u.role !== 'sales_rep' || !!u.salesAdminId, {
+    message: 'salesAdminId is required when role is sales_rep',
+    path: ['salesAdminId'],
+  });
 export type User = z.infer<typeof UserSchema>;
 
 // =============================================================================

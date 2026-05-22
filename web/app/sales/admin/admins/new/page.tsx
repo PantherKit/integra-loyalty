@@ -26,7 +26,7 @@ export default function NewAdminPage() {
       const res = await createSalesAdmin({ email });
       setCreated({ email: res.admin.email, tempPassword: res.tempPassword });
     } catch (e: unknown) {
-      setError(apiErrorMessage(e, 'No se pudo crear el admin de ventas'));
+      setError(apiErrorMessage(e, 'No se pudo crear el Admin'));
     } finally {
       setSubmitting(false);
     }
@@ -37,9 +37,13 @@ export default function NewAdminPage() {
       <div className="max-w-lg">
         <h1 className="text-xl font-bold text-zinc-900 mb-2">Admin creado</h1>
         <p className="text-sm text-zinc-600 mb-4">
-          Comparte el acceso con el nuevo admin. Al entrar, el sistema lo lleva directo a su panel.
+          Comparte el acceso con el nuevo Admin. Al entrar, el sistema lo lleva directo a su panel.
         </p>
-        <ShareAccess email={created.email} tempPassword={created.tempPassword} kind="admin" />
+        <ShareAccess
+          email={created.email}
+          tempPassword={created.tempPassword}
+          kind="Admin"
+        />
         <div className="mt-6 flex gap-3">
           <button
             onClick={() => router.push('/sales/admin')}
@@ -63,15 +67,15 @@ export default function NewAdminPage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-xl font-bold text-zinc-900 mb-1">Alta de admin</h1>
+      <h1 className="text-xl font-bold text-zinc-900 mb-1">Alta de Admin</h1>
       <p className="text-sm text-zinc-600 mb-6">
-        Un admin puede crear vendedores y otros admins. Verá lo que él y su equipo construyan.
-        Recibirá una contraseña temporal para su primer ingreso.
+        Un Admin recluta y gestiona su propio equipo de Vendedores. Recibirá una
+        contraseña temporal para su primer ingreso.
       </p>
 
       <form onSubmit={onSubmit} className="space-y-4">
         <label className="block">
-          <span className="text-sm font-medium text-zinc-700">Email del admin</span>
+          <span className="text-sm font-medium text-zinc-700">Email del Admin</span>
           <input
             type="email"
             required
@@ -94,7 +98,7 @@ export default function NewAdminPage() {
           disabled={submitting || !email}
           className="bg-zinc-900 text-white px-4 py-2 rounded text-sm hover:bg-zinc-800 disabled:opacity-50"
         >
-          {submitting ? 'Creando…' : 'Crear admin de ventas'}
+          {submitting ? 'Creando…' : 'Crear Admin'}
         </button>
       </form>
     </div>

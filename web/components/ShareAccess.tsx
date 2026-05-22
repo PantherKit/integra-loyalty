@@ -15,7 +15,7 @@ export default function ShareAccess({
 }: {
   email: string;
   tempPassword: string;
-  kind: 'vendedor' | 'admin';
+  kind: 'Vendedor' | 'Admin';
 }) {
   const [copied, setCopied] = useState(false);
 
