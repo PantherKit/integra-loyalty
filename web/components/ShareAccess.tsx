@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 /**
  * Tarjeta de credenciales recién creadas + acciones para compartirlas.
- * El admin entrega esto al nuevo vendedor/admin por canal seguro: incluye
+ * El admin entrega esto al nuevo Vendedor/Admin por canal seguro: incluye
  * la URL de login (derivada del origin actual, así funciona con cualquier
  * dominio), el email y la contraseña temporal.
  */
@@ -54,41 +54,71 @@ Al entrar, el sistema te lleva directo a tu panel. Cambia la contraseña en tu p
 
   return (
     <div className="space-y-3">
-      <div className="bg-amber-50 border border-amber-200 rounded p-4 text-sm space-y-2">
-        <div>
-          <span className="text-zinc-500">URL de acceso:</span>{' '}
-          <span className="font-mono select-all break-all">{loginUrl}</span>
-        </div>
-        <div>
-          <span className="text-zinc-500">Email:</span>{' '}
-          <span className="font-mono select-all">{email}</span>
-        </div>
-        <div>
-          <span className="text-zinc-500">Contraseña temporal:</span>{' '}
-          <span className="font-mono select-all">{tempPassword}</span>
+      {/* Tarjeta de credenciales */}
+      <div className="rounded-xl border border-zinc-200 overflow-hidden">
+        <CredRow label="URL de acceso" value={loginUrl} mono break />
+        <CredRow label="Email" value={email} mono />
+        {/* Contraseña destacada */}
+        <div className="flex flex-col gap-1 px-4 py-3 bg-[#4f7d2a]/5">
+          <span className="text-[11px] uppercase tracking-wide text-zinc-500">
+            Contraseña temporal
+          </span>
+          <span className="font-mono text-lg font-semibold text-[#3d6520] select-all">
+            {tempPassword}
+          </span>
         </div>
       </div>
 
+      {/* Acciones */}
       <div className="flex gap-2">
         <button
           type="button"
           onClick={share}
-          className="flex-1 bg-zinc-900 text-white px-4 py-2 rounded text-sm hover:bg-zinc-800"
+          className="flex-1 bg-[#4f7d2a] hover:bg-[#3d6520] text-white px-4 py-2.5 rounded-lg text-sm font-medium min-h-[44px]"
         >
           Compartir acceso
         </button>
         <button
           type="button"
           onClick={copy}
-          className="flex-1 border border-zinc-300 text-zinc-700 px-4 py-2 rounded text-sm hover:bg-zinc-50"
+          className="flex-1 border border-zinc-300 text-zinc-700 px-4 py-2.5 rounded-lg text-sm hover:bg-zinc-50 min-h-[44px]"
         >
           {copied ? 'Copiado ✓' : 'Copiar credenciales'}
         </button>
       </div>
-      <p className="text-xs text-zinc-400">
-        La contraseña temporal solo se muestra una vez. Compártela por un canal seguro
-        (no por correo abierto).
+
+      <p className="flex items-start gap-1.5 text-xs text-zinc-400">
+        <span aria-hidden>🔒</span>
+        <span>
+          La contraseña temporal solo se muestra una vez. Compártela por un canal
+          seguro (no por correo abierto).
+        </span>
       </p>
+    </div>
+  );
+}
+
+function CredRow({
+  label,
+  value,
+  mono,
+  break: brk,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  break?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5 px-4 py-2.5 border-b border-zinc-100">
+      <span className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</span>
+      <span
+        className={`text-sm text-zinc-900 select-all ${mono ? 'font-mono' : ''} ${
+          brk ? 'break-all' : ''
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }

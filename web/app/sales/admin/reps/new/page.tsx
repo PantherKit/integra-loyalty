@@ -11,6 +11,7 @@ import {
   type SalesAdmin,
 } from '@/lib/api';
 import ShareAccess from '@/components/ShareAccess';
+import IntegraLogo from '@/components/IntegraLogo';
 
 export default function NewRepPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function NewRepPage() {
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{ userId: string; tempPassword: string } | null>(null);
 
-  // integra_admin debe elegir bajo qué sales_admin va el rep.
+  // integra_admin debe elegir bajo qué Admin va el Vendedor.
   const [isIntegraAdmin, setIsIntegraAdmin] = useState(false);
   const [admins, setAdmins] = useState<SalesAdmin[]>([]);
   const [selectedAdminId, setSelectedAdminId] = useState('');
@@ -35,7 +36,7 @@ export default function NewRepPage() {
           setAdmins(res.admins);
           if (res.admins.length > 0) setSelectedAdminId(res.admins[0].userId);
         })
-        .catch(() => setError('No se pudieron cargar los admins de ventas'))
+        .catch(() => setError('No se pudieron cargar los Admins'))
         .finally(() => setLoadingAdmins(false));
     }
   }, []);
@@ -45,7 +46,6 @@ export default function NewRepPage() {
     setSubmitting(true);
     setError(null);
     try {
-      // sales_admin → el backend lo auto-vincula. integra_admin → manda salesAdminId.
       const res = await createSalesRep(
         isIntegraAdmin ? { email, salesAdminId: selectedAdminId } : { email }
       );
@@ -59,69 +59,61 @@ export default function NewRepPage() {
 
   if (created) {
     return (
-      <div className="max-w-lg">
-        <h1 className="text-xl font-bold text-zinc-900 mb-2">Vendedor creado</h1>
-        <p className="text-sm text-zinc-600 mb-4">
-          Comparte el acceso con el vendedor. Al entrar, el sistema lo lleva directo a su panel.
-        </p>
+      <FormShell title="Vendedor creado" subtitle="Comparte el acceso. Al entrar, el sistema lo lleva directo a su panel.">
         <ShareAccess email={email} tempPassword={created.tempPassword} kind="Vendedor" />
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex gap-2">
           <button
             onClick={() => router.push(`/sales/admin/reps?id=${encodeURIComponent(created.userId)}`)}
-            className="bg-zinc-900 text-white px-4 py-2 rounded text-sm hover:bg-zinc-800"
+            className="flex-1 bg-[#4f7d2a] hover:bg-[#3d6520] text-white px-4 py-2.5 rounded-lg text-sm font-medium"
           >
             Ver detalle
           </button>
           <button
             onClick={() => router.push('/sales/admin')}
-            className="text-zinc-600 px-4 py-2 text-sm"
+            className="flex-1 border border-zinc-300 text-zinc-700 px-4 py-2.5 rounded-lg text-sm hover:bg-zinc-50"
           >
             Volver al panel
           </button>
         </div>
-      </div>
+      </FormShell>
     );
   }
 
-  // integra_admin sin ningún sales_admin creado: no puede dar de alta reps todavía.
+  // integra_admin sin ningún Admin creado: no puede dar de alta vendedores aún.
   if (isIntegraAdmin && !loadingAdmins && admins.length === 0) {
     return (
-      <div className="max-w-lg">
-        <h1 className="text-xl font-bold text-zinc-900 mb-2">Alta de vendedor</h1>
-        <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-900">
-          Todavía no hay ningún Admin. Un Vendedor siempre va bajo un Admin —
-          crea primero un admin de ventas.
+      <FormShell title="Alta de Vendedor">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">
+          Todavía no hay ningún Admin. Un Vendedor siempre va bajo un Admin — crea primero un Admin.
         </div>
         <Link
           href="/sales/admin/admins/new"
-          className="inline-block mt-4 bg-zinc-900 text-white px-4 py-2 rounded text-sm hover:bg-zinc-800"
+          className="inline-block mt-4 bg-[#4f7d2a] hover:bg-[#3d6520] text-white px-4 py-2.5 rounded-lg text-sm font-medium"
         >
-          Crear admin de ventas
+          Crear Admin
         </Link>
-      </div>
+      </FormShell>
     );
   }
 
   return (
-    <div className="max-w-lg">
-      <h1 className="text-xl font-bold text-zinc-900 mb-1">Alta de vendedor</h1>
-      <p className="text-sm text-zinc-600 mb-6">
-        {isIntegraAdmin
+    <FormShell
+      title="Alta de Vendedor"
+      subtitle={`${
+        isIntegraAdmin
           ? 'El Vendedor quedará bajo el Admin que elijas.'
-          : 'El nuevo Vendedor quedará bajo tu equipo.'}{' '}
-        Recibirá una contraseña temporal para su primer ingreso.
-      </p>
-
+          : 'El nuevo Vendedor quedará en tu equipo.'
+      } Recibirá una contraseña temporal para su primer ingreso.`}
+    >
       <form onSubmit={onSubmit} className="space-y-4">
         {isIntegraAdmin && (
-          <label className="block">
-            <span className="text-sm font-medium text-zinc-700">Admin de ventas</span>
+          <Field label="Admin">
             <select
               required
               value={selectedAdminId}
               onChange={(e) => setSelectedAdminId(e.target.value)}
               disabled={loadingAdmins}
-              className="mt-1 w-full border border-zinc-200 rounded px-3 py-2 text-sm bg-white"
+              className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-sm bg-white min-h-[44px] focus:border-[#4f7d2a] focus:outline-none"
             >
               {loadingAdmins && <option>Cargando…</option>}
               {admins.map((a) => (
@@ -130,24 +122,23 @@ export default function NewRepPage() {
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         )}
 
-        <label className="block">
-          <span className="text-sm font-medium text-zinc-700">Email del vendedor</span>
+        <Field label="Email del Vendedor">
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full border border-zinc-200 rounded px-3 py-2 text-sm"
+            className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:border-[#4f7d2a] focus:outline-none"
             placeholder="daniela@integra-group.ai"
             autoCapitalize="none"
           />
-        </label>
+        </Field>
 
         {error && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+          <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
             {error}
           </div>
         )}
@@ -155,11 +146,56 @@ export default function NewRepPage() {
         <button
           type="submit"
           disabled={submitting || !email || (isIntegraAdmin && !selectedAdminId)}
-          className="bg-zinc-900 text-white px-4 py-2 rounded text-sm hover:bg-zinc-800 disabled:opacity-50"
+          className="w-full bg-[#4f7d2a] hover:bg-[#3d6520] text-white px-4 py-2.5 rounded-lg text-sm font-medium min-h-[44px] disabled:opacity-50"
         >
-          {submitting ? 'Creando…' : 'Crear vendedor'}
+          {submitting ? 'Creando…' : 'Crear Vendedor'}
         </button>
       </form>
+    </FormShell>
+  );
+}
+
+/** Tarjeta de formulario con mini-header de marca Integra. Local a esta página. */
+function FormShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="max-w-lg mx-auto">
+      <Link
+        href="/sales/admin"
+        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-[#4f7d2a] mb-4"
+      >
+        ← Volver al panel
+      </Link>
+      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-zinc-100">
+          <span className="grid place-items-center w-7 h-7 rounded-md bg-[#4f7d2a] text-white">
+            <IntegraLogo size={16} />
+          </span>
+          <span className="text-sm font-semibold text-zinc-900">Integra · Sales Org</span>
+        </div>
+        <div className="p-5">
+          <h1 className="text-xl font-bold text-zinc-900">{title}</h1>
+          {subtitle && <p className="text-sm text-zinc-500 mt-1 mb-5">{subtitle}</p>}
+          {!subtitle && <div className="mb-4" />}
+          {children}
+        </div>
+      </div>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="text-sm font-medium text-zinc-700 mb-1 block">{label}</span>
+      {children}
+    </label>
   );
 }
