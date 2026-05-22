@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { decodeJwtClaims, clearToken, homeForRole } from '@/lib/api';
+import IntegraLogo from '@/components/IntegraLogo';
 
 /**
  * Guard + shell mobile-first para sales_rep. Bottom-nav fija con 3 íconos.
@@ -21,7 +22,6 @@ export default function SalesRepLayout({ children }: { children: React.ReactNode
       return;
     }
     if (claims.role !== 'sales_rep' && claims.role !== 'integra_admin') {
-      // Rol ajeno a esta consola → lo mandamos a la suya, no a /dashboard a ciegas.
       router.replace(homeForRole(claims.role));
       return;
     }
@@ -37,23 +37,30 @@ export default function SalesRepLayout({ children }: { children: React.ReactNode
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 pb-20">
+    <div className="min-h-screen bg-zinc-50 pb-24">
       <header className="bg-white border-b border-zinc-200 sticky top-0 z-10">
-        <div className="px-4 h-12 flex items-center justify-between">
-          <span className="font-semibold text-zinc-900 text-sm">Integra · Mi cartera</span>
+        <div className="px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="grid place-items-center w-8 h-8 rounded-lg bg-[#4f7d2a] text-white">
+              <IntegraLogo size={18} />
+            </span>
+            <span className="font-semibold text-zinc-900 text-sm leading-tight">
+              Integra <span className="text-zinc-400 font-normal">· Mi cartera</span>
+            </span>
+          </div>
           <button
             onClick={() => {
               clearToken();
               router.replace('/login');
             }}
-            className="text-xs text-zinc-500"
+            className="text-xs text-zinc-500 px-2 py-1"
           >
             Salir
           </button>
         </div>
       </header>
 
-      <main className="px-4 py-4">{children}</main>
+      <main className="px-4 py-4 max-w-md mx-auto">{children}</main>
 
       <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-zinc-200 z-10">
         <div className="grid grid-cols-3 max-w-md mx-auto">
@@ -90,21 +97,27 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={`flex flex-col items-center justify-center py-3 min-h-[56px] text-xs ${
-        active ? 'text-zinc-900' : 'text-zinc-500'
+      className={`flex flex-col items-center justify-center py-2.5 min-h-[60px] text-[11px] font-medium transition-colors ${
+        active ? 'text-[#4f7d2a]' : 'text-zinc-400'
       }`}
     >
-      <svg className="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        {icon === 'home' && (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l9-9 9 9M5 10v10h14V10" />
-        )}
-        {icon === 'plus' && (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m-8-8h16" />
-        )}
-        {icon === 'list' && (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        )}
-      </svg>
+      <span
+        className={`grid place-items-center w-9 h-7 rounded-lg mb-0.5 ${
+          active ? 'bg-[#4f7d2a]/10' : ''
+        }`}
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {icon === 'home' && (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l9-9 9 9M5 10v10h14V10" />
+          )}
+          {icon === 'plus' && (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m-8-8h16" />
+          )}
+          {icon === 'list' && (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          )}
+        </svg>
+      </span>
       <span>{label}</span>
     </Link>
   );
