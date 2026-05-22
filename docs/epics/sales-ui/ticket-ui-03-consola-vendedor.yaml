@@ -1,0 +1,57 @@
+intencion: >
+  Pulir la consola del vendedor de Sales Org (inicio, alta de comercio, detalle
+  de comercio): branding Integra, pulido visual, refinar el responsive
+  mobile-first y mejorar la navegación. Sin tocar lógica.
+
+repo: ~/Documents/IntegraGroupAI/integra-loyalty
+rama_base: main
+
+contexto:
+  - Front Next.js 14 App Router + Tailwind.
+  - Archivos de este ticket (SOLO estos, todo bajo web/app/sales/rep/):
+    layout.tsx, page.tsx, nuevo-comercio/page.tsx, comercios/page.tsx.
+  - layout.tsx: shell mobile-first con header sticky + bottom-nav de 3 íconos
+    (Inicio / Nuevo / Comercios). Guard: solo sales_rep.
+  - page.tsx: KPIs personales (grid 2x2) + lista de comercios de la cartera.
+  - nuevo-comercio/page.tsx: formulario de alta de comercio (nombre, giro,
+    email del dueño) + pantalla de éxito con credenciales.
+  - comercios/page.tsx: detalle de un comercio (?id=) con sus KPIs.
+  - Esta consola YA es mobile-first; este ticket la pule, no la reescribe.
+  - La data viene de web/lib/api.ts — NO modificar ese archivo.
+  - Build `output: export` estático.
+
+aceptacion:
+  - Branding Integra aplicado: logo en el header, verde Integra en CTAs y en el
+    ítem activo del bottom-nav, acentos coherentes.
+  - KPI cards de page.tsx con mejor jerarquía visual; lista de comercios con
+    tarjetas pulidas (estado de suscripción con badge de color, MRR destacado).
+  - Formulario de nuevo-comercio cómodo para usar con una mano: inputs grandes,
+    bottom-nav no tapa el submit, scroll correcto.
+  - Detalle de comercio con jerarquía clara y badges de estado.
+  - Empty state de "sin comercios" con ícono + texto + CTA.
+  - Estados de carga con skeletons. Verificado mentalmente a 360x740 (Android
+    gama media — requisito del producto en CLAUDE.md).
+  - Se respeta la guía de branding (abajo). Lógica, rutas y llamadas API intactas.
+  - `cd web && npm run lint` y `cd web && npm run build` verdes.
+
+fuera_de_alcance:
+  - No tocar web/lib/api.ts ni el backend.
+  - No crear componentes nuevos en web/components/ (mantener locales a estas páginas).
+  - No tocar la consola admin ni los flujos de alta del admin (otros tickets).
+  - No cambiar la familia tipográfica ni agregar dependencias.
+
+verificaciones:
+  - cd web && npm run lint
+  - cd web && npm run build
+
+branding: >
+  GUÍA DE BRANDING (idéntica en los 3 tickets de la épica):
+  - Verde Integra: primario #4f7d2a, hover/oscuro #3d6520. Solo en CTAs
+    primarios, links/tabs activos e indicadores positivos. No saturar.
+  - Neutros: fondo zinc-50/blanco, texto zinc-900/zinc-600, bordes zinc-200.
+  - Logo: usar el componente existente web/components/IntegraLogo.tsx en headers.
+  - Tipografía: la que ya usa la app — NO cambiarla.
+  - Badges: verde=activo/positivo, ámbar=warning/past_due, rojo=churn/error, zinc=neutro.
+  - Responsive: mobile-first; targets táctiles >=44px; nada de scroll horizontal.
+  - Empty states: ícono + título + descripción + CTA.
+  - Loading: skeletons que imiten el layout final.
