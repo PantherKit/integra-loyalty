@@ -235,7 +235,7 @@ export function isSubscriptionRequired(e: unknown): boolean {
 export interface SalesRep {
   userId: string;
   email: string;
-  createdBy?: string | null;
+  salesAdminId?: string;
   createdAt: string;
   lastLoginAt: string | null;
 }
@@ -271,8 +271,9 @@ export interface SalesMerchantKpi {
 
 export type KpiWindow = '7d' | '30d' | '90d' | 'all';
 
-export async function listSalesReps(): Promise<{ reps: SalesRep[] }> {
-  return request(`/admin/sales/reps`);
+export async function listSalesReps(adminId?: string): Promise<{ reps: SalesRep[] }> {
+  const qs = adminId ? `?adminId=${encodeURIComponent(adminId)}` : '';
+  return request(`/admin/sales/reps${qs}`);
 }
 
 export async function getSalesRep(repId: string): Promise<SalesRep> {
@@ -281,6 +282,7 @@ export async function getSalesRep(repId: string): Promise<SalesRep> {
 
 export async function createSalesRep(input: {
   email: string;
+  salesAdminId?: string;
 }): Promise<{ rep: SalesRep; tempPassword: string }> {
   return request(`/admin/sales/reps`, { method: 'POST', body: JSON.stringify(input) });
 }
@@ -410,6 +412,7 @@ export function homeForRole(role?: string): string {
   switch (role) {
     case 'sales_rep':
       return '/sales/rep';
+    case 'sales_admin':
     case 'integra_admin':
       return '/sales/admin';
     default:

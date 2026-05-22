@@ -20,7 +20,7 @@ export default function SalesRepLayout({ children }: { children: React.ReactNode
       router.replace('/login');
       return;
     }
-    if (claims.role !== 'sales_rep') {
+    if (claims.role !== 'sales_rep' && claims.role !== 'integra_admin') {
       // Rol ajeno a esta consola → lo mandamos a la suya, no a /dashboard a ciegas.
       router.replace(homeForRole(claims.role));
       return;
