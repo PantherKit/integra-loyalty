@@ -57,11 +57,11 @@ export async function requireTenant(c: Context, next: Next) {
 export const MERCHANT_ROLES = ['owner', 'merchant', 'staff', 'integra_admin'] as const;
 
 /**
- * Roles internos de Integra. Su JWT lleva tenantId = INTEGRA_TENANT_ID y
- * gestionan la fuerza de ventas / consola interna. `integra_admin` aparece
- * en ambas listas porque también puede operar el back office del comercio.
+ * Roles internos de Integra (modelo de 2 roles): `integra_admin` (admin) y
+ * `sales_rep` (vendedor). `integra_admin` aparece también en MERCHANT_ROLES
+ * porque puede operar el back office del comercio.
  */
-export const INTEGRA_ROLES = ['sales_admin', 'sales_rep', 'integra_admin'] as const;
+export const INTEGRA_ROLES = ['sales_rep', 'integra_admin'] as const;
 
 /**
  * Autorización por rol (hallazgo C2). Debe ir DESPUÉS de requireTenant.

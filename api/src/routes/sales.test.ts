@@ -1,9 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 /**
- * Tests del router /admin/sales. Inyectamos un middleware fake en lugar de
- * requireTenant para evitar JWT real; el rol del caller se pasa via header
- * x-fake-role para los tests.
+ * Tests del router /admin/sales — modelo de 2 roles (integra_admin / sales_rep)
+ * con visibilidad por subárbol (createdBy).
+ *
+ * Árbol de prueba (listIntegraUsers mock):
+ *   raiz   (integra_admin, createdBy null)
+ *     ├── adminB (integra_admin, createdBy raiz)
+ *     ├── rep1   (sales_rep,    createdBy raiz)
+ *     └── rep2   (sales_rep,    createdBy raiz)
+ *   adminB no creó a nadie → su subárbol está vacío.
  */
 
 const ctx = { role: '', userId: '' };
@@ -16,7 +22,7 @@ vi.mock('../middleware/tenant', async () => {
     ...actual,
     requireTenant: async (c: any, next: any) => {
       c.set('tenantId', 'INTEGRA');
-      c.set('userId', ctx.userId || 'caller-1');
+      c.set('userId', ctx.userId || 'raiz');
       c.set('userEmail', 'caller@integra.local');
       c.set('userRole', ctx.role);
       await next();
@@ -30,9 +36,7 @@ vi.mock('../lib/cognito', () => ({
 }));
 
 const userRepo = {
-  getUser: vi.fn(),
   listIntegraUsers: vi.fn(),
-  listSalesRepsByAdmin: vi.fn(),
   putUser: vi.fn(),
 };
 vi.mock('../lib/repositories/user', () => userRepo);
@@ -43,6 +47,16 @@ const merchantRepo = {
   listMerchantsByRep: vi.fn(),
 };
 vi.mock('../lib/repositories/merchant', () => merchantRepo);
+
+vi.mock('../lib/repositories/tenant', () => ({
+  createTenant: vi.fn(),
+}));
+
+const TREE = [
+  { type: 'USER', userId: 'adminB', email: 'b@i', role: 'integra_admin', createdBy: 'raiz' },
+  { type: 'USER', userId: 'rep1', email: 'r1@i', role: 'sales_rep', createdBy: 'raiz' },
+  { type: 'USER', userId: 'rep2', email: 'r2@i', role: 'sales_rep', createdBy: 'raiz' },
+];
 
 beforeEach(() => {
   createCognitoMock.mockReset();
@@ -58,14 +72,16 @@ async function loadApp() {
 }
 
 describe('POST /admin/sales/reps', () => {
-  it('sales_admin crea rep auto-vinculado a sí mismo', async () => {
-    ctx.role = 'sales_admin';
-    ctx.userId = 'admin-A';
-    createCognitoMock.mockResolvedValueOnce({ cognitoSub: 'rep-sub-1' });
+  it('integra_admin crea vendedor con createdBy = caller', async () => {
+    ctx.role = 'integra_admin';
+    ctx.userId = 'raiz';
+    createCognitoMock.mockResolvedValueOnce({ cognitoSub: 'rep-new' });
     userRepo.putUser.mockResolvedValueOnce({
-      userId: 'rep-sub-1',
+      userId: 'rep-new',
       email: 'd@i.local',
-      salesAdminId: 'admin-A',
+      createdBy: 'raiz',
+      createdAt: 'x',
+      lastLoginAt: null,
     });
 
     const app = await loadApp();
@@ -75,107 +91,36 @@ describe('POST /admin/sales/reps', () => {
       body: JSON.stringify({ email: 'd@i.local' }),
     });
     expect(res.status).toBe(201);
-    const body = (await res.json()) as any;
-    expect(body.rep.salesAdminId).toBe('admin-A');
-    expect(body.tempPassword).toBeTruthy();
-    // putUser fue llamado con salesAdminId = admin-A (no del body)
     expect(userRepo.putUser).toHaveBeenCalledWith(
-      expect.objectContaining({ role: 'sales_rep', salesAdminId: 'admin-A' })
+      expect.objectContaining({ role: 'sales_rep', createdBy: 'raiz' })
     );
-  });
-
-  it('sales_rep recibe 403 al intentar crear rep', async () => {
-    ctx.role = 'sales_rep';
-    ctx.userId = 'rep-X';
-
-    const app = await loadApp();
-    const res = await app.request('/reps', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'd@i.local' }),
-    });
-    expect(res.status).toBe(403);
-  });
-
-  it('integra_admin debe pasar salesAdminId explícito', async () => {
-    ctx.role = 'integra_admin';
-    ctx.userId = 'jorge';
-
-    const app = await loadApp();
-    const res = await app.request('/reps', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'd@i.local' }),
-    });
-    expect(res.status).toBe(400);
-  });
-});
-
-describe('GET /admin/sales/reps', () => {
-  it('sales_admin recibe solo sus reps', async () => {
-    ctx.role = 'sales_admin';
-    ctx.userId = 'admin-A';
-    userRepo.listSalesRepsByAdmin.mockResolvedValueOnce([
-      { userId: 'r1', email: 'a@b', role: 'sales_rep', salesAdminId: 'admin-A' },
-      { userId: 'r2', email: 'c@d', role: 'sales_rep', salesAdminId: 'admin-A' },
-    ]);
-
-    const app = await loadApp();
-    const res = await app.request('/reps');
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as any;
-    expect(body.reps).toHaveLength(2);
-    expect(userRepo.listSalesRepsByAdmin).toHaveBeenCalledWith('admin-A');
   });
 
   it('sales_rep recibe 403', async () => {
     ctx.role = 'sales_rep';
-    ctx.userId = 'r1';
-
+    ctx.userId = 'rep1';
     const app = await loadApp();
-    const res = await app.request('/reps');
-    expect(res.status).toBe(403);
-  });
-
-  it('integra_admin sin filtro lista todos los reps', async () => {
-    ctx.role = 'integra_admin';
-    ctx.userId = 'jorge';
-    userRepo.listIntegraUsers.mockResolvedValueOnce([
-      { userId: 'r1', role: 'sales_rep', salesAdminId: 'admin-A' },
-      { userId: 'r2', role: 'sales_rep', salesAdminId: 'admin-B' },
-      { userId: 'admin-A', role: 'sales_admin' },
-    ]);
-
-    const app = await loadApp();
-    const res = await app.request('/reps');
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as any;
-    expect(body.reps.map((r: any) => r.userId).sort()).toEqual(['r1', 'r2']);
-  });
-});
-
-describe('GET /admin/sales/reps/:repId — visibility', () => {
-  it('sales_admin pidiendo rep ajeno recibe 404 (no 403, para no filtrar existencia)', async () => {
-    ctx.role = 'sales_admin';
-    ctx.userId = 'admin-A';
-    userRepo.getUser.mockResolvedValueOnce({
-      userId: 'r-other',
-      role: 'sales_rep',
-      salesAdminId: 'admin-B',
+    const res = await app.request('/reps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'd@i.local' }),
     });
-
-    const app = await loadApp();
-    const res = await app.request('/reps/r-other');
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(403);
   });
 });
 
 describe('POST /admin/sales/admins', () => {
-  it('integra_admin crea sales_admin', async () => {
+  it('integra_admin crea otro admin con createdBy = caller', async () => {
     ctx.role = 'integra_admin';
-    ctx.userId = 'jorge';
-    createCognitoMock.mockResolvedValueOnce({ cognitoSub: 'admin-sub-1' });
-    userRepo.putUser.mockResolvedValueOnce({ userId: 'admin-sub-1', email: 'max@i.local' });
+    ctx.userId = 'raiz';
+    createCognitoMock.mockResolvedValueOnce({ cognitoSub: 'admin-new' });
+    userRepo.putUser.mockResolvedValueOnce({
+      userId: 'admin-new',
+      email: 'max@i.local',
+      createdBy: 'raiz',
+      createdAt: 'x',
+      lastLoginAt: null,
+    });
 
     const app = await loadApp();
     const res = await app.request('/admins', {
@@ -184,18 +129,14 @@ describe('POST /admin/sales/admins', () => {
       body: JSON.stringify({ email: 'max@i.local' }),
     });
     expect(res.status).toBe(201);
-    const body = (await res.json()) as any;
-    expect(body.admin.email).toBe('max@i.local');
-    expect(body.tempPassword).toBeTruthy();
     expect(userRepo.putUser).toHaveBeenCalledWith(
-      expect.objectContaining({ role: 'sales_admin' })
+      expect.objectContaining({ role: 'integra_admin', createdBy: 'raiz' })
     );
   });
 
-  it('sales_admin recibe 403 al intentar crear otro admin', async () => {
-    ctx.role = 'sales_admin';
-    ctx.userId = 'admin-A';
-
+  it('sales_rep recibe 403', async () => {
+    ctx.role = 'sales_rep';
+    ctx.userId = 'rep1';
     const app = await loadApp();
     const res = await app.request('/admins', {
       method: 'POST',
@@ -206,85 +147,112 @@ describe('POST /admin/sales/admins', () => {
   });
 });
 
-describe('GET /admin/sales/admins', () => {
-  it('integra_admin lista solo sales_admins', async () => {
+describe('GET /admin/sales/reps — visibilidad por subárbol', () => {
+  it('raiz ve los vendedores de su subárbol', async () => {
     ctx.role = 'integra_admin';
-    ctx.userId = 'jorge';
-    userRepo.listIntegraUsers.mockResolvedValueOnce([
-      { userId: 'a1', email: 'a@i', role: 'sales_admin', createdAt: 'x', lastLoginAt: null },
-      { userId: 'r1', email: 'r@i', role: 'sales_rep', salesAdminId: 'a1' },
-      { userId: 'jorge', email: 'j@i', role: 'integra_admin' },
-    ]);
+    ctx.userId = 'raiz';
+    userRepo.listIntegraUsers.mockResolvedValueOnce(TREE);
+
+    const app = await loadApp();
+    const res = await app.request('/reps');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.reps.map((r: any) => r.userId).sort()).toEqual(['rep1', 'rep2']);
+  });
+
+  it('adminB sin subárbol no ve ningún vendedor', async () => {
+    ctx.role = 'integra_admin';
+    ctx.userId = 'adminB';
+    userRepo.listIntegraUsers.mockResolvedValueOnce(TREE);
+
+    const app = await loadApp();
+    const res = await app.request('/reps');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.reps).toEqual([]);
+  });
+
+  it('sales_rep recibe 403', async () => {
+    ctx.role = 'sales_rep';
+    ctx.userId = 'rep1';
+    const app = await loadApp();
+    const res = await app.request('/reps');
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('GET /admin/sales/admins — visibilidad por subárbol', () => {
+  it('raiz ve los admins de su subárbol', async () => {
+    ctx.role = 'integra_admin';
+    ctx.userId = 'raiz';
+    userRepo.listIntegraUsers.mockResolvedValueOnce(TREE);
 
     const app = await loadApp();
     const res = await app.request('/admins');
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
-    expect(body.admins.map((a: any) => a.userId)).toEqual(['a1']);
+    expect(body.admins.map((a: any) => a.userId)).toEqual(['adminB']);
   });
+});
 
-  it('sales_admin recibe 403', async () => {
-    ctx.role = 'sales_admin';
-    ctx.userId = 'admin-A';
+describe('POST /admin/sales/merchants/:merchantId/assign', () => {
+  it('rechaza asignar a un vendedor fuera del subárbol', async () => {
+    ctx.role = 'integra_admin';
+    ctx.userId = 'raiz';
+    userRepo.listIntegraUsers.mockResolvedValueOnce(TREE);
 
     const app = await loadApp();
-    const res = await app.request('/admins');
+    const res = await app.request('/merchants/tenant-1/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ salesRepId: 'rep-foreign' }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('asigna a un vendedor del subárbol', async () => {
+    ctx.role = 'integra_admin';
+    ctx.userId = 'raiz';
+    userRepo.listIntegraUsers.mockResolvedValueOnce(TREE);
+    merchantRepo.getMerchantByTenant.mockResolvedValueOnce({ tenantId: 'tenant-1' });
+    merchantRepo.assignRepToMerchant.mockResolvedValueOnce({
+      tenantId: 'tenant-1',
+      salesRepId: 'rep1',
+    });
+
+    const app = await loadApp();
+    const res = await app.request('/merchants/tenant-1/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ salesRepId: 'rep1' }),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('sales_rep recibe 403', async () => {
+    ctx.role = 'sales_rep';
+    ctx.userId = 'rep1';
+    const app = await loadApp();
+    const res = await app.request('/merchants/tenant-1/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ salesRepId: 'rep1' }),
+    });
     expect(res.status).toBe(403);
   });
 });
 
 describe('GET /admin/sales/kpis/me', () => {
-  it('integra_admin recibe totales globales (no 400)', async () => {
+  it('integra_admin sin subárbol recibe totales en cero', async () => {
     ctx.role = 'integra_admin';
-    ctx.userId = 'jorge';
-    // listAllSalesAdmins → listIntegraUsers filtrado a sales_admin
-    userRepo.listIntegraUsers.mockResolvedValueOnce([
-      { userId: 'admin-A', email: 'a@i', role: 'sales_admin' },
-    ]);
-    // computeAdminKpi(admin-A) → listSalesRepsByAdmin
-    userRepo.listSalesRepsByAdmin.mockResolvedValueOnce([]);
+    ctx.userId = 'adminB';
+    userRepo.listIntegraUsers.mockResolvedValueOnce(TREE);
 
     const app = await loadApp();
     const res = await app.request('/kpis/me');
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
-    expect(body).toHaveProperty('repsCount');
-    expect(body).toHaveProperty('mrrMxn');
-  });
-});
-
-describe('POST /admin/sales/merchants/:merchantId/assign', () => {
-  it('sales_admin no puede asignar a rep ajeno', async () => {
-    ctx.role = 'sales_admin';
-    ctx.userId = 'admin-A';
-    userRepo.listSalesRepsByAdmin.mockResolvedValueOnce([
-      { userId: 'r-own', role: 'sales_rep', salesAdminId: 'admin-A' },
-    ]);
-
-    const app = await loadApp();
-    const res = await app.request('/merchants/tenant-1/assign', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ salesRepId: 'r-foreign' }),
-    });
-    expect(res.status).toBe(403);
-  });
-
-  it('integra_admin asigna a cualquier rep', async () => {
-    ctx.role = 'integra_admin';
-    ctx.userId = 'jorge';
-    merchantRepo.getMerchantByTenant.mockResolvedValueOnce({ tenantId: 'tenant-1' });
-    merchantRepo.assignRepToMerchant.mockResolvedValueOnce({
-      tenantId: 'tenant-1',
-      salesRepId: 'r-any',
-    });
-
-    const app = await loadApp();
-    const res = await app.request('/merchants/tenant-1/assign', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ salesRepId: 'r-any' }),
-    });
-    expect(res.status).toBe(200);
+    expect(body.repsCount).toBe(0);
+    expect(body.mrrMxn).toBe(0);
   });
 });

@@ -35,15 +35,11 @@ export default function NewAdminPage() {
   if (created) {
     return (
       <div className="max-w-lg">
-        <h1 className="text-xl font-bold text-zinc-900 mb-2">Admin de ventas creado</h1>
+        <h1 className="text-xl font-bold text-zinc-900 mb-2">Admin creado</h1>
         <p className="text-sm text-zinc-600 mb-4">
-          Comparte el acceso con el nuevo admin de ventas. Al entrar, el sistema lo lleva directo a su panel.
+          Comparte el acceso con el nuevo admin. Al entrar, el sistema lo lleva directo a su panel.
         </p>
-        <ShareAccess
-          email={created.email}
-          tempPassword={created.tempPassword}
-          kind="admin de ventas"
-        />
+        <ShareAccess email={created.email} tempPassword={created.tempPassword} kind="admin" />
         <div className="mt-6 flex gap-3">
           <button
             onClick={() => router.push('/sales/admin')}
@@ -67,15 +63,15 @@ export default function NewAdminPage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-xl font-bold text-zinc-900 mb-1">Alta de admin de ventas</h1>
+      <h1 className="text-xl font-bold text-zinc-900 mb-1">Alta de admin</h1>
       <p className="text-sm text-zinc-600 mb-6">
-        Un admin de ventas recluta y gestiona su propio equipo de vendedores. Recibirá una
-        contraseña temporal para su primer ingreso.
+        Un admin puede crear vendedores y otros admins. Verá lo que él y su equipo construyan.
+        Recibirá una contraseña temporal para su primer ingreso.
       </p>
 
       <form onSubmit={onSubmit} className="space-y-4">
         <label className="block">
-          <span className="text-sm font-medium text-zinc-700">Email del admin de ventas</span>
+          <span className="text-sm font-medium text-zinc-700">Email del admin</span>
           <input
             type="email"
             required
