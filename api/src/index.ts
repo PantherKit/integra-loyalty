@@ -11,6 +11,7 @@ import { activity } from './routes/activity';
 import { wallet } from './routes/wallet';
 import { billing } from './routes/billing';
 import { sales } from './routes/sales';
+import { dashboard } from './routes/dashboard';
 
 const app = new Hono();
 
@@ -32,6 +33,7 @@ app.route('/cards', cards); // GET /cards/:id público; /lookup, /:id/stamp, /:i
 app.route('/activity', activity);
 app.route('/billing', billing); // checkout/status (auth) + webhook (público, raw body)
 app.route('/admin/sales', sales); // consola interna Sales Org (sales_admin / sales_rep / integra_admin)
+app.route('/dashboard', dashboard); // panel merchant — recomendaciones AI (auth requireTenant)
 app.route('/v1', wallet); // PassKit Web Service de Apple (Apple agrega /v1 a webServiceURL)
 app.route('/', publicRoutes); // /m/:slug, /m/:slug/customers
 

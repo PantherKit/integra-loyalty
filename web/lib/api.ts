@@ -196,6 +196,40 @@ export async function getActivity(limit = 20): Promise<{ items: Transaction[] }>
   return request<{ items: Transaction[] }>(`/activity?limit=${limit}`);
 }
 
+// Dashboard — recomendaciones AI
+
+export type DashboardSignalType = 'churn_at_risk' | 'slow_day' | 'stale_redemption';
+export type DashboardCtaKind = 'navigate' | 'whatsapp' | 'dismiss';
+export type DashboardKpiId =
+  | 'clientes_activos'
+  | 'sellos_otorgados'
+  | 'premios_canjeados'
+  | 'programa_activo';
+
+export interface DashboardRecommendation {
+  id: string;
+  signal_type: DashboardSignalType;
+  copy: string;
+  cta_label: string;
+  cta_kind: DashboardCtaKind;
+  cta_target?: string;
+  evidence?: Record<string, unknown>;
+}
+
+export interface DashboardKpiExplanation {
+  kpi_id: DashboardKpiId;
+  text: string;
+}
+
+export interface DashboardRecommendationsResponse {
+  recommendations: DashboardRecommendation[];
+  kpi_explanations: DashboardKpiExplanation[];
+}
+
+export async function getDashboardRecommendations(): Promise<DashboardRecommendationsResponse> {
+  return request<DashboardRecommendationsResponse>('/dashboard/recommendations');
+}
+
 // Billing — suscripción Stripe (prueba 14 días + paywall)
 
 export type BillingPlan = 'basico' | 'pro' | 'multi';
