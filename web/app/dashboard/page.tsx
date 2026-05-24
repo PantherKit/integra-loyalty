@@ -14,6 +14,10 @@ import {
 } from 'lucide-react';
 import LoyaltyPass from '@/components/LoyaltyPass';
 import { useDashboard } from '@/components/dashboard-context';
+import {
+  RecommendationCard,
+  type Recommendation as DashboardRecommendationCard,
+} from '@/components/dashboard/RecommendationCard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,7 +32,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DEFAULT_STAMPS_REQUIRED } from '@/lib/constants';
 import {
   getActivity,
+  getDashboardRecommendations,
   listMyPrograms,
+  type DashboardKpiExplanation,
+  type DashboardKpiId,
   type LoyaltyProgram,
   type Transaction,
 } from '@/lib/api';
@@ -59,6 +66,9 @@ export default function ResumenPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<DashboardRecommendationCard[]>([]);
+  const [kpiExplanations, setKpiExplanations] = useState<DashboardKpiExplanation[]>([]);
+  const [recsLoading, setRecsLoading] = useState(false);
 
   async function load(initial = false) {
     if (initial) setLoading(true);
@@ -81,6 +91,36 @@ export default function ResumenPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch lazy de recomendaciones: post primer paint, no bloquea KPIs/feed.
+  // Errores silentes — la sección simplemente no se renderiza si falla.
+  useEffect(() => {
+    let cancelled = false;
+    const t = setTimeout(() => {
+      setRecsLoading(true);
+      getDashboardRecommendations()
+        .then((res) => {
+          if (cancelled) return;
+          setRecommendations(res.recommendations ?? []);
+          setKpiExplanations(res.kpi_explanations ?? []);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setRecommendations([]);
+          setKpiExplanations([]);
+        })
+        .finally(() => {
+          if (!cancelled) setRecsLoading(false);
+        });
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, []);
+
+  const kpiExplanationById: Partial<Record<DashboardKpiId, string>> = {};
+  for (const k of kpiExplanations) kpiExplanationById[k.kpi_id] = k.text;
+
   const activeProgram = programs.find((p) => p.status === 'active') ?? programs[0] ?? null;
   const stampsGiven = activity
     .filter((t) => t.kind === 'stamp')
@@ -90,30 +130,40 @@ export default function ResumenPage() {
     activity.map((t) => t.customerPhone).filter(Boolean)
   ).size;
 
-  const KPIS = [
+  const KPIS: Array<{
+    label: string;
+    value: string;
+    hint: string;
+    icon: typeof Users;
+    kpiId: DashboardKpiId;
+  }> = [
     {
       label: 'Clientes activos',
       value: String(uniqueCustomers),
       hint: 'en actividad reciente',
       icon: Users,
+      kpiId: 'clientes_activos',
     },
     {
       label: 'Sellos otorgados',
       value: String(stampsGiven),
       hint: 'últimas 20 operaciones',
       icon: Plus,
+      kpiId: 'sellos_otorgados',
     },
     {
       label: 'Premios canjeados',
       value: String(redemptions),
       hint: 'recompensas entregadas',
       icon: Gift,
+      kpiId: 'premios_canjeados',
     },
     {
       label: 'Programa activo',
       value: activeProgram ? '1' : '0',
       hint: activeProgram ? activeProgram.name : 'crea tu programa',
       icon: Award,
+      kpiId: 'programa_activo',
     },
   ];
 
@@ -151,6 +201,26 @@ export default function ResumenPage() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+
+        {recsLoading ? (
+          <section aria-label="Recomendaciones para hoy" className="space-y-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Recomendaciones para hoy
+            </p>
+            <Skeleton className="h-20" />
+          </section>
+        ) : recommendations.length > 0 ? (
+          <section aria-label="Recomendaciones para hoy" className="space-y-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Recomendaciones para hoy
+            </p>
+            <div className="space-y-2">
+              {recommendations.map((r) => (
+                <RecommendationCard key={r.id} recommendation={r} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <Card className="min-h-[560px]">
           <CardHeader className="flex-row items-center justify-between space-y-0 border-b pb-3">
@@ -272,21 +342,31 @@ export default function ResumenPage() {
           </CardHeader>
           <CardContent className="p-0">
             <dl className="divide-y">
-              {KPIS.map((k) => (
-                <div key={k.label} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-3">
-                  <div className="min-w-0">
-                    <dt className="truncate text-xs font-medium text-muted-foreground">
-                      {k.label}
-                    </dt>
-                    <dd className="mt-0.5 truncate text-[11px] text-muted-foreground/70">
-                      {k.hint}
-                    </dd>
+              {KPIS.map((k) => {
+                const explanation = kpiExplanationById[k.kpiId];
+                return (
+                  <div key={k.label} className="px-4 py-3">
+                    <div className="grid grid-cols-[1fr_auto] gap-3">
+                      <div className="min-w-0">
+                        <dt className="truncate text-xs font-medium text-muted-foreground">
+                          {k.label}
+                        </dt>
+                        <dd className="mt-0.5 truncate text-[11px] text-muted-foreground/70">
+                          {k.hint}
+                        </dd>
+                      </div>
+                      <dd className="font-mono text-lg font-semibold tabular-nums text-foreground">
+                        {loading ? '—' : k.value}
+                      </dd>
+                    </div>
+                    {explanation && (
+                      <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                        {explanation}
+                      </p>
+                    )}
                   </div>
-                  <dd className="font-mono text-lg font-semibold tabular-nums text-foreground">
-                    {loading ? '—' : k.value}
-                  </dd>
-                </div>
-              ))}
+                );
+              })}
             </dl>
           </CardContent>
         </Card>
