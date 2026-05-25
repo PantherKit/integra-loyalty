@@ -26,10 +26,37 @@ export interface ApiError {
   body: unknown;
 }
 
+// Cuando NEXT_PUBLIC_API_URL apunta a localhost (modo dev local) y hay un
+// rol guardado por /dev page, mandamos x-tenant-id / x-user-id que la API
+// local acepta vía ALLOW_HEADER_AUTH=true. En prod (API_URL en AWS) NO se
+// inyectan estos headers, así el flujo normal de Cognito sigue intacto.
+const DEV_TENANT_KEY = 'integra_dev_tenant_id';
+const DEV_USER_KEY = 'integra_dev_user_id';
+
+function getDevHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  if (!API_URL.includes('localhost')) return {};
+  const tenant = window.localStorage.getItem(DEV_TENANT_KEY);
+  const userId = window.localStorage.getItem(DEV_USER_KEY);
+  if (!tenant || !userId) return {};
+  return { 'x-tenant-id': tenant, 'x-user-id': userId };
+}
+
+export function setDevRole(tenantId: string, userId: string) {
+  window.localStorage.setItem(DEV_TENANT_KEY, tenantId);
+  window.localStorage.setItem(DEV_USER_KEY, userId);
+}
+
+export function clearDevRole() {
+  window.localStorage.removeItem(DEV_TENANT_KEY);
+  window.localStorage.removeItem(DEV_USER_KEY);
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...getDevHeaders(),
     ...(init.headers as Record<string, string>),
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;

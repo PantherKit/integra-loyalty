@@ -1,0 +1,18 @@
+{
+  "name": "integra-loyalty",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:up": "bash scripts/dev/up.sh",
+    "dev:down": "docker compose down",
+    "dev:seed": "cd api && tsx scripts/dev/seed.ts",
+    "dev:create-table": "cd api && tsx scripts/dev/create-table.ts",
+    "dev:api": "cd api && ENV=dev ALLOW_HEADER_AUTH=true TABLE_NAME=integra-loyalty-dev DDB_ENDPOINT=http://localhost:8000 AWS_ACCESS_KEY_ID=local AWS_SECRET_ACCESS_KEY=local AWS_REGION=us-east-1 COGNITO_USER_POOL_ID=us-east-1_localdummy COGNITO_CLIENT_ID=localdummyclient tsx src/local.ts",
+    "dev:web": "cd web && NEXT_PUBLIC_API_URL=http://localhost:3002 pnpm dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "wait-on": "^8.0.1"
+  },
+  "packageManager": "pnpm@10.33.2"
+}

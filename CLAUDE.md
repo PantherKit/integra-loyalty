@@ -120,10 +120,40 @@ El POC es lo que demuestra el producto a comercios prospecto. Los datos son mock
 - `docs/br/` — Business Requirements por feature (gate antes de codear cada feature)
 - Fuente de verdad: este CLAUDE.md + decisiones en `docs/adr/`
 
+## Dev local (un comando)
+
+Para un dev nuevo que clone el repo y quiera probar todo sin AWS:
+
+```bash
+# requisitos: docker desktop arriba, pnpm, node 20+
+pnpm install
+pnpm dev:up
+```
+
+Esto hace en secuencia:
+
+1. `docker compose up -d` → levanta **DynamoDB Local** en `localhost:8000` (in-memory, sin volumen — datos se pierden al `pnpm dev:down`)
+2. Espera a que DDB esté listo
+3. Crea la tabla `integra-loyalty-dev` con el mismo schema (PK/SK + GSI1 + GSI2) que el stack CDK
+4. Seedea 2 users en tenant `INTEGRA`:
+   - `super_admin@integra.local` · role `integra_admin`
+   - `sales_admin@integra.local` · role `sales_admin`
+5. Arranca **API local** en `localhost:3002` (Hono + node-server adapter) con `ENV=dev` + `ALLOW_HEADER_AUTH=true`
+6. Arranca **web local** en `localhost:3001` apuntando a la API local
+
+**Para entrar a la UI**: abre `http://localhost:3001/dev`, elige un rol y entras. La página `/dev` guarda `x-tenant-id` + `x-user-id` en localStorage; el middleware `tenant` los acepta cuando `ALLOW_HEADER_AUTH=true`, así no se necesita Cognito en local.
+
+**Para parar**: `Ctrl+C` y luego `pnpm dev:down` (apaga el container).
+
+**Datos**: los users seedeados no tienen merchants/programas asociados. Para crear datos de prueba, entra como `super_admin` y úsalos desde la UI normal; o agrega seeds en `scripts/dev/seed.ts`.
+
 ## Comandos comunes
 
 | Comando | Qué hace |
 |---|---|
+| `pnpm dev:up` | **Stack local completo** (DDB + API + web). Ver sección "Dev local" arriba |
+| `pnpm dev:down` | Apaga el container de DDB Local |
+| `pnpm dev:seed` | Re-corre el seed sin levantar todo |
 | `cd api && npm run lint` | Typecheck del backend (Lambda + Hono) |
 | `cd infra && npm run synth` | Genera CloudFormation sin deploy (validación CDK) |
 | `cd infra && npm run diff:dev` | Diff de cambios pendientes vs lo deployado en dev |

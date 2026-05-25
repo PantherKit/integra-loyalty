@@ -1,0 +1,13 @@
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: integra-loyalty-ddb-local
+    ports:
+      - "8000:8000"
+    command: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb"]
+    healthcheck:
+      # DDB Local responde 400 a GET / by design. Aceptamos 400 como vivo.
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8000 | grep -q 400"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
