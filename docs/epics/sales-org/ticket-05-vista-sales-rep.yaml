@@ -1,0 +1,34 @@
+intencion: >
+  Vista del sales_rep: su cartera de comercios con estado y KPIs, un flujo de
+  "vender rápido" para registrar un comercio nuevo y dejarlo asignado a él, y
+  un feed simple de actividad reciente (tarjetas emitidas, suscripciones nuevas,
+  alertas de churn). Diseñada para uso desde celular: el rep está en la calle.
+
+repo: ~/Documents/IntegraGroupAI/integra-loyalty
+rama_base: main
+
+contexto:
+  - Front Next.js 14 App Router; la sección rep vive bajo web/app/sales/rep/* — separada del /dashboard del merchant y del /sales/admin del ticket-04.
+  - El layout server-side debe verificar role == 'sales_rep' y redirigir si no.
+  - APIs disponibles tras ticket-02 y ticket-03: /admin/sales/merchants (sin filtros devuelve los del rep del JWT), /admin/sales/kpis/me, /admin/sales/kpis/merchants/<repId>.
+  - El alta de comercio (crear merchant + tenant + owner inicial) ya existe en el backend — ver api/src/routes/merchants.ts. Este ticket reusa ese endpoint pasando un campo nuevo `salesRepId` que se infiere del JWT del rep que llama.
+  - Mobile-first es requisito del producto (CLAUDE.md: "Smartphones Android gama media-baja → mobile-first, cero dependencia de iOS-only features"). Esta vista en particular debe verse y operarse bien en pantalla <380px.
+
+aceptacion:
+  - Ruta `/sales/rep` — vista principal mobile-first: KPIs personales arriba (comercios, tarjetas emitidas, MRR atribuible, este mes vs el anterior), debajo lista de comercios cargo con estado visual (activo / past_due / inactivo).
+  - Ruta `/sales/rep/nuevo-comercio` — formulario corto: nombre del comercio, email del owner, plan tentativo (basico/pro/multi). Submit crea merchant + owner vía el endpoint existente, le pasa salesRepId del JWT, y redirige al detalle del comercio recién creado.
+  - Ruta `/sales/rep/comercios/[merchantId]` — detalle: info del merchant, sus KPIs (cards count, última actividad, status de suscripción), y botón "Ver en back office del comercio" que abre /dashboard del merchant en otra pestaña con su credencial owner (solo lectura — el rep no debe poder emitir sellos ahí).
+  - Layout `/sales/rep/layout.tsx` con bottom-nav mobile (3 íconos: Inicio · Nuevo · Yo) y header sticky. Touch targets ≥44px. Sin hover-only interactions.
+  - Si la API responde 403 "merchant ajeno", el cliente muestra error claro y vuelve a /sales/rep.
+  - Build y lint verdes. Verificación manual del autor del PR de que se ve correcto en viewport 360×740 (typical Android mid-range).
+
+fuera_de_alcance:
+  - No vista de sales_admin (eso es ticket-04).
+  - No flujo de invitar al merchant por WhatsApp / email (ese es un ticket aparte).
+  - No edición de datos del merchant desde la vista rep — solo lectura + alta.
+  - No "tomar el control" del comercio (emitir sellos como si fueran el owner). El rep es vendedor, no operador.
+  - No notificaciones push al rep.
+
+verificaciones:
+  - cd web && npm run lint
+  - cd web && npm run build

@@ -1,0 +1,37 @@
+intencion: >
+  Introducir los roles `sales_admin` y `sales_rep` en el sistema (Cognito + auth backend
+  + entidades en DynamoDB), con la jerarquía sales_admin → sales_rep → merchant
+  representada por campos en las entidades existentes. Esta es la base sobre la que se
+  apoyan los demás tickets de la épica Sales Org.
+
+repo: ~/Documents/IntegraGroupAI/integra-loyalty
+rama_base: main
+
+contexto:
+  - Cognito hoy usa custom:role con valores `owner`, `merchant`, `staff`, `integra_admin`. Definidos en api/src/lib/cognito.ts (createCognitoUser) y consumidos en api/src/middleware/tenant.ts (MERCHANT_ROLES y requireRole).
+  - JWT verificado en api/src/middleware/tenant.ts y carga tenantId + role en el contexto Hono. Los nuevos roles deben pasar por el mismo middleware sin abrir nuevos paths de auth.
+  - Schemas Zod viven en api/src/lib/entities.ts (Tenant, Merchant, etc.). Repositorios DynamoDB en api/src/lib/repositories/ (uno por entidad, single-table).
+  - Convención decidida en EPIC.md: los users Integra-side (sales_admin, sales_rep, integra_admin) usan tenantId = "INTEGRA" como tenant reservado. Esto evita inventar un middleware nuevo y aprovecha requireTenant.
+  - Convención decidida en EPIC.md: la jerarquía no introduce entidad nueva — se agregan campos `salesAdminId` al user de tipo sales_rep y `salesRepId` (opcional, null para legacy) al Merchant.
+
+aceptacion:
+  - En api/src/lib/cognito.ts, createCognitoUser acepta los roles `sales_admin` y `sales_rep` además de los existentes; se documenta en el JSDoc.
+  - En api/src/middleware/tenant.ts se define una constante `INTEGRA_ROLES = ['sales_admin', 'sales_rep', 'integra_admin']` exportada para uso en routes.
+  - En api/src/lib/entities.ts, UserSchema acepta los nuevos roles en su enum, y si el rol es `sales_rep` el campo `salesAdminId` es requerido (string, uuid del sales_admin).
+  - En api/src/lib/entities.ts, MerchantSchema agrega campo opcional `salesRepId` (string, uuid) que apunta al sales_rep que vendió ese comercio. Null para merchants previos.
+  - api/src/lib/repositories/user.ts soporta crear y leer users tipo sales_admin/sales_rep con tenantId = "INTEGRA"; agrega un método `listByAdmin(salesAdminId)` que devuelve los reps de un admin.
+  - api/src/lib/repositories/merchant.ts agrega métodos `listByRep(salesRepId)` y `assignRep(merchantId, salesRepId)` que persisten en DynamoDB.
+  - Tests vitest (al menos uno por método nuevo) cubren: alta de sales_admin sin salesAdminId (válido), alta de sales_rep exige salesAdminId (Zod falla sin él), listByAdmin retorna solo reps del admin pasado, listByRep retorna solo merchants asignados al rep, assignRep persiste correctamente.
+  - No se rompen flujos existentes: api/src/middleware/tenant.test.ts sigue verde con los roles previos.
+
+fuera_de_alcance:
+  - No crear endpoints HTTP nuevos (eso es ticket-02).
+  - No crear vistas en el frontend.
+  - No tocar billing, Stripe, Apple Wallet o Google Wallet.
+  - No migrar merchants existentes (todos quedan con salesRepId = null).
+  - No implementar invitación por email/SMS para alta de usuarios.
+
+verificaciones:
+  - cd api && npm run lint
+  - cd api && npx vitest run
+  - cd infra && npm run synth

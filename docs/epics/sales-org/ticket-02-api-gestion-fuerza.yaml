@@ -1,0 +1,37 @@
+intencion: >
+  Crear los endpoints HTTP para que un sales_admin pueda reclutar y gestionar a sus
+  vendedores (sales_rep), y para que un sales_rep pueda ver y asignar sus comercios.
+  La visibilidad es estricta por jerarquía: cada quien ve solo lo suyo; integra_admin
+  ve todo.
+
+repo: ~/Documents/IntegraGroupAI/integra-loyalty
+rama_base: main
+
+contexto:
+  - El modelo de datos + roles ya está implementado en ticket-01 (sales_admin y sales_rep en Cognito, salesAdminId en User, salesRepId en Merchant, INTEGRA_ROLES en middleware).
+  - Patrón actual de routes: api/src/routes/<entidad>.ts, montadas en api/src/index.ts con `app.route('/<prefix>', handler)`. Ejemplos: merchants.ts, programs.ts, cards.ts.
+  - Patrón actual de auth en routes: `app.use(requireTenant)` + `app.<verb>('/...', requireRole('owner','merchant'), handler)`. Ver api/src/routes/merchants.ts como referencia.
+  - El campo `tenantId = "INTEGRA"` se usa para reservar el namespace de users Integra-side. Los handlers deben validar visibilidad por jerarquía además de por tenant.
+
+aceptacion:
+  - Se crea api/src/routes/sales.ts montado en `/admin/sales` desde api/src/index.ts.
+  - Endpoint `POST /admin/sales/reps` — crea un sales_rep nuevo y lo asocia al sales_admin del JWT. Solo permitido para `sales_admin` e `integra_admin`. Si lo llama un integra_admin, debe pasar `salesAdminId` en el body; si lo llama un sales_admin, se usa su propio sub.
+  - Endpoint `GET /admin/sales/reps` — lista de reps. Para sales_admin devuelve solo sus reps; para integra_admin devuelve todos (con filtro opcional `?adminId=...`). Para sales_rep responde 403.
+  - Endpoint `GET /admin/sales/reps/:repId` — detalle de un rep. Verifica que el rep pertenezca al sales_admin del JWT (excepto integra_admin que ve cualquiera).
+  - Endpoint `GET /admin/sales/merchants` — lista de merchants. Para sales_rep devuelve solo los suyos (donde salesRepId == su sub); para sales_admin devuelve los de todos sus reps; para integra_admin devuelve todos (con filtro `?repId=` y `?adminId=`).
+  - Endpoint `POST /admin/sales/merchants/:merchantId/assign` — asigna o reasigna salesRepId a un merchant. Solo `integra_admin` y `sales_admin` (este último solo a reps de su sub-fuerza). Body: `{ salesRepId }`.
+  - Cada handler usa `requireRole(...)` con la lista mínima necesaria, y reverifica visibilidad jerárquica antes de devolver datos (un sales_admin pidiendo /reps/<repId> de otro admin recibe 404, no 403, para no filtrar existencia).
+  - Tests vitest cubren: alta de rep como sales_admin auto-vincula al admin del JWT; alta como sales_admin con salesAdminId en body lo ignora; listado por rol respeta jerarquía; sales_admin no puede asignar merchant a un rep ajeno; integra_admin puede asignar a cualquiera.
+  - Documentación corta en api/src/routes/sales.ts (top-level JSDoc) describiendo los 5 endpoints, su autorización y el modelo de visibilidad.
+
+fuera_de_alcance:
+  - No endpoints de KPIs / métricas agregadas (eso es ticket-03).
+  - No flujos de invitación por email/SMS.
+  - No edición ni baja de sales_admin (solo lo crea integra_admin manualmente vía Cognito y la entidad User; no es flujo de producto hoy).
+  - No paginación avanzada — por ahora límite duro de 200 items por lista; si se excede, error.
+  - No vistas frontend (eso es ticket-04 y ticket-05).
+
+verificaciones:
+  - cd api && npm run lint
+  - cd api && npx vitest run
+  - cd infra && npm run synth
