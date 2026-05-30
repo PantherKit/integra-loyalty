@@ -9,12 +9,14 @@ import {
   type SalesRepKpi,
   type SalesMerchantKpi,
 } from '@/lib/api';
+import DemoPassGallery from '@/components/DemoPassGallery';
 
 export default function SalesRepHome() {
   const [me, setMe] = useState<SalesRepKpi | null>(null);
   const [merchants, setMerchants] = useState<SalesMerchantKpi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   useEffect(() => {
     const claims = decodeJwtClaims();
@@ -29,16 +31,24 @@ export default function SalesRepHome() {
       })
       .catch(() => alive && setError('Error cargando tu cartera'))
       .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, []);
 
   return (
-    <div className="space-y-5">
-      <section>
-        <h1 className="text-xl font-bold text-zinc-900">Mi cartera</h1>
-        <p className="text-xs text-zinc-400">Últimos 30 días</p>
+    <div className="space-y-6">
+
+      {/* Encabezado */}
+      <section className="flex items-end justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-zinc-900">Mi cartera</h1>
+          <p className="text-xs text-zinc-400">Últimos 30 días</p>
+        </div>
+        <Link
+          href="/sales/rep/nuevo-comercio"
+          className="inline-flex items-center gap-1.5 bg-[#4f7d2a] hover:bg-[#3d6520] text-white px-4 py-2.5 rounded-lg text-sm font-medium min-h-[40px]"
+        >
+          + Nuevo comercio
+        </Link>
       </section>
 
       {error && (
@@ -47,8 +57,8 @@ export default function SalesRepHome() {
         </div>
       )}
 
+      {/* KPIs */}
       {loading && <KpiSkeleton />}
-
       {me && !loading && (
         <section className="grid grid-cols-2 gap-3">
           <KpiCard label="Comercios" value={me.merchantsCount} icon="store" />
@@ -69,12 +79,10 @@ export default function SalesRepHome() {
         </section>
       )}
 
-      <section className="pt-1">
+      {/* Lista de comercios */}
+      <section>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-semibold text-zinc-900">Tus comercios</h2>
-          <Link href="/sales/rep/nuevo-comercio" className="text-xs font-medium text-[#4f7d2a]">
-            + Nuevo
-          </Link>
         </div>
 
         {!loading && merchants.length === 0 && (
@@ -84,7 +92,7 @@ export default function SalesRepHome() {
             </div>
             <p className="text-sm font-medium text-zinc-700">Aún no tienes comercios</p>
             <p className="text-sm text-zinc-400 mt-0.5 mb-4">
-              Registra tu primer comercio para empezar.
+              Registra tu primer comercio para empezar a generar comisión.
             </p>
             <Link
               href="/sales/rep/nuevo-comercio"
@@ -119,9 +127,41 @@ export default function SalesRepHome() {
           ))}
         </div>
       </section>
+
+      {/* Sección Demo rápida */}
+      <section className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
+        <button
+          onClick={() => setDemoOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3.5 text-left"
+        >
+          <div>
+            <p className="text-sm font-semibold text-zinc-900">Demo rápida</p>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Muéstrale al prospecto cómo se ve en su celular
+            </p>
+          </div>
+          <ChevronIcon open={demoOpen} />
+        </button>
+
+        {demoOpen && (
+          <div className="px-4 pb-5 border-t border-zinc-100 pt-4">
+            <DemoPassGallery title="Ejemplos — así se ve en Apple Wallet" />
+            <div className="mt-4 space-y-2 text-sm text-zinc-500">
+              <p className="font-medium text-zinc-700">¿Cómo usar la demo?</p>
+              <ol className="space-y-1.5 list-decimal list-inside">
+                <li>Muéstrale estas 3 tarjetas al prospecto.</li>
+                <li>Dile que la suya puede tener su logo y colores exactos.</li>
+                <li>Regístralo con &ldquo;Nuevo comercio&rdquo; → termina el onboarding en 10 min.</li>
+              </ol>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
+
+// ─── Componentes internos ──────────────────────────────────────────────────
 
 type IconName = 'store' | 'card' | 'money' | 'warn';
 
@@ -224,6 +264,20 @@ function Icon({ name }: { name: IconName }) {
   return (
     <svg className={c} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8m-3-5h6m-9 7h12V6H6z" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`w-4 h-4 text-zinc-400 transition-transform ${open ? 'rotate-180' : ''}`}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
     </svg>
   );
 }

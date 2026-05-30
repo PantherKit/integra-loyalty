@@ -58,12 +58,12 @@ app.route("/health", health);
 app.route("/auth", auth);
 app.route("/merchants", merchants);
 app.route("/programs", programs);
-app.route("/c", publicRoutes);
+app.route("/", publicRoutes);
 app.route("/cards", cards);
 app.route("/activity", activity);
 app.route("/wallet", wallet);
 app.route("/billing", billing);
-app.route("/sales", sales);
+app.route("/admin/sales", sales);
 app.route("/dashboard", dashboard);
 
 const port = Number(process.env.PORT ?? 3002);

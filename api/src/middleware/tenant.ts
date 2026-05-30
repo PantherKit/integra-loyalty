@@ -1,5 +1,6 @@
 import type { Context, Next } from 'hono';
 import { verifyIdToken } from '../lib/cognito';
+import { getUser } from '../lib/repositories/user';
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -41,10 +42,13 @@ export async function requireTenant(c: Context, next: Next) {
   if (process.env.ENV === 'dev' && process.env.ALLOW_HEADER_AUTH === 'true') {
     const headerTenant = c.req.header('x-tenant-id');
     if (headerTenant) {
+      const headerUserId = c.req.header('x-user-id') ?? 'dev-user';
+      const user = await getUser(headerTenant, headerUserId).catch(() => null);
+
       c.set('tenantId', headerTenant);
-      c.set('userId', c.req.header('x-user-id') ?? 'dev-user');
-      c.set('userEmail', c.req.header('x-user-email') ?? 'dev@example.com');
-      c.set('userRole', 'owner');
+      c.set('userId', headerUserId);
+      c.set('userEmail', user?.email ?? c.req.header('x-user-email') ?? 'dev@example.com');
+      c.set('userRole', user?.role ?? 'owner');
       await next();
       return;
     }

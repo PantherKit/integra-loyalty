@@ -35,13 +35,20 @@ const ROLES: Role[] = [
   },
 ];
 
+// El rol dev se mapea al mismo string que usa custom:role en Cognito.
+const ROLE_MAP: Record<string, string> = {
+  'super_admin@integra.local': 'integra_admin',
+  'sales_admin@integra.local': 'sales_admin',
+};
+
 export default function DevLoginPage() {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
 
   function pick(role: Role) {
     setBusy(role.label);
-    setDevRole(role.tenantId, role.userId);
+    const devRole = ROLE_MAP[role.email] ?? 'merchant';
+    setDevRole(role.tenantId, role.userId, devRole, role.email);
     setTimeout(() => router.push(role.redirect), 200);
   }
 
