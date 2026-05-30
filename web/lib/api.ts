@@ -32,6 +32,8 @@ export interface ApiError {
 // inyectan estos headers, así el flujo normal de Cognito sigue intacto.
 const DEV_TENANT_KEY = 'integra_dev_tenant_id';
 const DEV_USER_KEY = 'integra_dev_user_id';
+const DEV_ROLE_KEY = 'integra_dev_role';
+const DEV_EMAIL_KEY = 'integra_dev_email';
 
 function getDevHeaders(): Record<string, string> {
   if (typeof window === 'undefined') return {};
@@ -42,14 +44,18 @@ function getDevHeaders(): Record<string, string> {
   return { 'x-tenant-id': tenant, 'x-user-id': userId };
 }
 
-export function setDevRole(tenantId: string, userId: string) {
+export function setDevRole(tenantId: string, userId: string, role: string, email: string) {
   window.localStorage.setItem(DEV_TENANT_KEY, tenantId);
   window.localStorage.setItem(DEV_USER_KEY, userId);
+  window.localStorage.setItem(DEV_ROLE_KEY, role);
+  window.localStorage.setItem(DEV_EMAIL_KEY, email);
 }
 
 export function clearDevRole() {
   window.localStorage.removeItem(DEV_TENANT_KEY);
   window.localStorage.removeItem(DEV_USER_KEY);
+  window.localStorage.removeItem(DEV_ROLE_KEY);
+  window.localStorage.removeItem(DEV_EMAIL_KEY);
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -442,8 +448,17 @@ export async function createSalesMerchant(input: {
   });
 }
 
-/** Decodifica payload del JWT (NO verifica firma — solo lectura cliente para guards). */
+/** Decodifica payload del JWT (NO verifica firma — solo lectura cliente para guards).
+ *  En modo dev local (API apuntando a localhost) lee los claims desde localStorage
+ *  en lugar del JWT, para no requerir Cognito en local. */
 export function decodeJwtClaims(): { sub?: string; email?: string; role?: string } | null {
+  // Dev bypass: si estamos en localhost y hay headers dev, sintetizamos los claims.
+  if (typeof window !== 'undefined' && API_URL.includes('localhost')) {
+    const sub = window.localStorage.getItem(DEV_USER_KEY);
+    const role = window.localStorage.getItem(DEV_ROLE_KEY);
+    const email = window.localStorage.getItem(DEV_EMAIL_KEY);
+    if (sub && role) return { sub, role, email: email ?? undefined };
+  }
   const token = getToken();
   if (!token) return null;
   try {

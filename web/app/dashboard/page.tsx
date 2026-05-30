@@ -11,6 +11,8 @@ import {
   Share2,
   RefreshCw,
   ArrowUpRight,
+  TrendingUp,
+  Zap,
 } from 'lucide-react';
 import LoyaltyPass from '@/components/LoyaltyPass';
 import { useDashboard } from '@/components/dashboard-context';
@@ -92,7 +94,6 @@ export default function ResumenPage() {
   }, []);
 
   // Fetch lazy de recomendaciones: post primer paint, no bloquea KPIs/feed.
-  // Errores silentes — la sección simplemente no se renderiza si falla.
   useEffect(() => {
     let cancelled = false;
     const t = setTimeout(() => {
@@ -129,47 +130,16 @@ export default function ResumenPage() {
   const uniqueCustomers = new Set(
     activity.map((t) => t.customerPhone).filter(Boolean)
   ).size;
-
-  const KPIS: Array<{
-    label: string;
-    value: string;
-    hint: string;
-    icon: typeof Users;
-    kpiId: DashboardKpiId;
-  }> = [
-    {
-      label: 'Clientes activos',
-      value: String(uniqueCustomers),
-      hint: 'en actividad reciente',
-      icon: Users,
-      kpiId: 'clientes_activos',
-    },
-    {
-      label: 'Sellos otorgados',
-      value: String(stampsGiven),
-      hint: 'últimas 20 operaciones',
-      icon: Plus,
-      kpiId: 'sellos_otorgados',
-    },
-    {
-      label: 'Premios canjeados',
-      value: String(redemptions),
-      hint: 'recompensas entregadas',
-      icon: Gift,
-      kpiId: 'premios_canjeados',
-    },
-    {
-      label: 'Programa activo',
-      value: activeProgram ? '1' : '0',
-      hint: activeProgram ? activeProgram.name : 'crea tu programa',
-      icon: Award,
-      kpiId: 'programa_activo',
-    },
-  ];
+  const stampsRequired = activeProgram?.stampsRequired ?? DEFAULT_STAMPS_REQUIRED;
+  const fillRatePct =
+    uniqueCustomers > 0 && stampsRequired > 0
+      ? Math.min(100, Math.round((stampsGiven / (uniqueCustomers * stampsRequired)) * 100))
+      : 0;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
       <section className="min-w-0 space-y-4">
+        {/* Encabezado */}
         <header className="flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -179,7 +149,7 @@ export default function ResumenPage() {
               Hola, {merchant?.name ?? 'comercio'}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Operación del programa, actividad reciente y accesos de mostrador.
+              Actividad reciente y métricas del programa.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -202,6 +172,80 @@ export default function ResumenPage() {
           </Alert>
         )}
 
+        {/* Estado del programa */}
+        {!loading && (
+          <div
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${
+              activeProgram
+                ? 'border border-success/20 bg-success/5 text-success'
+                : 'border border-warning/20 bg-warning/5 text-warning'
+            }`}
+          >
+            <Award size={16} />
+            {activeProgram ? (
+              <>
+                <span>
+                  Programa activo:{' '}
+                  <span className="font-semibold">{activeProgram.name}</span>
+                </span>
+                <span className="ml-auto text-xs opacity-70">
+                  Necesitas {activeProgram.stampsRequired} sellos · Premio: {activeProgram.rewardDetail}
+                </span>
+              </>
+            ) : (
+              <>
+                <span>Sin programa activo</span>
+                <Button asChild variant="ghost" size="sm" className="ml-auto">
+                  <Link href="/dashboard/programa/">Crear programa</Link>
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+        {loading && <Skeleton className="h-12 rounded-xl" />}
+
+        {/* KPIs prominentes 2×2 */}
+        <div className="grid grid-cols-2 gap-3">
+          <KpiCard
+            icon={<Users size={16} />}
+            label="Clientes activos"
+            value={loading ? null : uniqueCustomers}
+            hint="en actividad reciente"
+            explanation={kpiExplanationById['clientes_activos']}
+            loading={loading}
+            accent={uniqueCustomers > 0}
+          />
+          <KpiCard
+            icon={<Plus size={16} />}
+            label="Sellos otorgados"
+            value={loading ? null : stampsGiven}
+            hint="últimas 20 operaciones"
+            explanation={kpiExplanationById['sellos_otorgados']}
+            loading={loading}
+          />
+          <KpiCard
+            icon={<Gift size={16} />}
+            label="Premios canjeados"
+            value={loading ? null : redemptions}
+            hint="recompensas entregadas"
+            explanation={kpiExplanationById['premios_canjeados']}
+            loading={loading}
+            accent={redemptions > 0}
+          />
+          <KpiCard
+            icon={<TrendingUp size={16} />}
+            label="Progreso promedio"
+            value={loading ? null : uniqueCustomers > 0 ? `${fillRatePct}%` : '—'}
+            hint={
+              uniqueCustomers > 0
+                ? `de ${stampsRequired} sellos hacia el premio`
+                : 'aún sin sellos'
+            }
+            loading={loading}
+          />
+        </div>
+
+        {/* Recomendaciones IA (lazy) */}
         {recsLoading ? (
           <section aria-label="Recomendaciones para hoy" className="space-y-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -222,7 +266,8 @@ export default function ResumenPage() {
           </section>
         ) : null}
 
-        <Card className="min-h-[560px]">
+        {/* Feed de actividad */}
+        <Card className="min-h-[400px]">
           <CardHeader className="flex-row items-center justify-between space-y-0 border-b pb-3">
             <div>
               <CardTitle>Actividad</CardTitle>
@@ -244,26 +289,35 @@ export default function ResumenPage() {
           <CardContent className="p-0">
             {loading ? (
               <div className="space-y-2 p-3">
-                {[0, 1, 2, 3, 4, 5].map((i) => (
+                {[0, 1, 2, 3, 4].map((i) => (
                   <Skeleton key={i} className="h-11" />
                 ))}
               </div>
             ) : activity.length === 0 ? (
-              <div className="flex min-h-[480px] flex-col items-center justify-center px-4 text-center">
-                <div className="mb-3 grid h-9 w-9 place-items-center rounded-xl border bg-muted text-muted-foreground">
-                  <ScanLine size={16} />
+              <div className="flex min-h-[360px] flex-col items-center justify-center px-4 text-center gap-3">
+                <div className="grid h-12 w-12 place-items-center rounded-xl border bg-muted text-muted-foreground">
+                  <Zap size={18} />
                 </div>
-                <p className="text-sm font-medium text-foreground">
-                  Aún no hay movimientos
-                </p>
-                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                  Cuando registres un sello o un canje, aparecerá en esta lista.
-                </p>
-                <Button asChild variant="loyalty" size="sm" className="mt-4">
-                  <Link href="/dashboard/give-stamp/">
-                    <ScanLine size={15} /> Dar primer sello
-                  </Link>
-                </Button>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Aún no hay movimientos
+                  </p>
+                  <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                    Comparte tu QR para que tus clientes se registren, luego dales sellos desde aquí.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/dashboard/share/">
+                      <Share2 size={14} /> Compartir QR
+                    </Link>
+                  </Button>
+                  <Button asChild variant="loyalty" size="sm">
+                    <Link href="/dashboard/give-stamp/">
+                      <ScanLine size={14} /> Dar sello
+                    </Link>
+                  </Button>
+                </div>
               </div>
             ) : (
               <ul className="divide-y">
@@ -315,6 +369,7 @@ export default function ResumenPage() {
         </Card>
       </section>
 
+      {/* Columna lateral */}
       <aside className="space-y-3 lg:sticky lg:top-6 lg:self-start">
         <Card>
           <CardHeader className="border-b pb-3">
@@ -337,46 +392,10 @@ export default function ResumenPage() {
 
         <Card>
           <CardHeader className="border-b pb-3">
-            <CardTitle>Indicadores</CardTitle>
-            <CardDescription>Actividad reciente del programa.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <dl className="divide-y">
-              {KPIS.map((k) => {
-                const explanation = kpiExplanationById[k.kpiId];
-                return (
-                  <div key={k.label} className="px-4 py-3">
-                    <div className="grid grid-cols-[1fr_auto] gap-3">
-                      <div className="min-w-0">
-                        <dt className="truncate text-xs font-medium text-muted-foreground">
-                          {k.label}
-                        </dt>
-                        <dd className="mt-0.5 truncate text-[11px] text-muted-foreground/70">
-                          {k.hint}
-                        </dd>
-                      </div>
-                      <dd className="font-mono text-lg font-semibold tabular-nums text-foreground">
-                        {loading ? '—' : k.value}
-                      </dd>
-                    </div>
-                    {explanation && (
-                      <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-                        {explanation}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </dl>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="border-b pb-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle>Tarjeta</CardTitle>
-                <CardDescription>Preview para clientes.</CardDescription>
+                <CardTitle>Tu tarjeta</CardTitle>
+                <CardDescription>Así se ve en Apple Wallet.</CardDescription>
               </div>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/dashboard/share/" aria-label="Compartir tarjeta">
@@ -392,6 +411,7 @@ export default function ResumenPage() {
               brandColor={merchant?.brandColor ?? '#4361ee'}
               tagline={merchant?.industry}
               logoUrl={merchant?.logoUrl}
+              stampStyle={merchant?.stampStyle}
               programName={activeProgram?.name ?? 'Programa de lealtad'}
               stampsRequired={activeProgram?.stampsRequired ?? DEFAULT_STAMPS_REQUIRED}
               rewardDetail={activeProgram?.rewardDetail ?? 'Tu recompensa aquí'}
@@ -401,6 +421,52 @@ export default function ResumenPage() {
           </CardContent>
         </Card>
       </aside>
+    </div>
+  );
+}
+
+// ─── KPI Card ──────────────────────────────────────────────────────────────
+
+function KpiCard({
+  icon,
+  label,
+  value,
+  hint,
+  explanation,
+  loading,
+  accent,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number | null;
+  hint: string;
+  explanation?: string;
+  loading: boolean;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-xl border p-4 space-y-2 ${
+        accent
+          ? 'border-success/20 bg-success/5'
+          : 'border-border bg-background'
+      }`}
+    >
+      <div className="flex items-center gap-1.5">
+        <span className={`${accent ? 'text-success' : 'text-muted-foreground'}`}>
+          {icon}
+        </span>
+        <span className="text-xs font-medium text-muted-foreground truncate">{label}</span>
+      </div>
+      <div className="text-2xl font-semibold tabular-nums text-foreground">
+        {loading ? <Skeleton className="h-8 w-12" /> : (value ?? '—')}
+      </div>
+      <p className="text-[11px] text-muted-foreground/80 truncate">{hint}</p>
+      {explanation && (
+        <p className="text-[11px] leading-snug text-muted-foreground border-t pt-1.5 mt-1">
+          {explanation}
+        </p>
+      )}
     </div>
   );
 }

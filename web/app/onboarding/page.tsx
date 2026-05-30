@@ -13,6 +13,9 @@ import {
   Copy,
   ImagePlus,
   LogIn,
+  Wallet,
+  QrCode as QrCodeIcon,
+  Share2,
 } from 'lucide-react';
 import {
   signup,
@@ -24,13 +27,13 @@ import {
 import ApplePassPreview from '@/components/ApplePassPreview';
 import LogoCropper from '@/components/LogoCropper';
 import QrCode from '@/components/QrCode';
+import DemoPassGallery from '@/components/DemoPassGallery';
 import { cn } from '@/lib/cn';
 
 const COLORS = [
   '#4f46e5', '#0ea5e9', '#059669', '#d97706',
   '#dc2626', '#db2777', '#7c3aed', '#111827',
 ];
-// Estilos de sello disponibles. 'logo' usa el logo recortado en círculo.
 const STAMP_STYLES: { v: StampStyle; l: string; glyph: string }[] = [
   { v: 'logo', l: 'Logo', glyph: '🏷️' },
   { v: 'disc', l: 'Círculo', glyph: '●' },
@@ -46,7 +49,6 @@ const REWARDS = [
   '2x1 en bebidas',
   'Producto gratis',
 ];
-// value = enum que espera la API; label = lo que ve el comercio.
 const INDUSTRIES = [
   { v: 'cafe', l: 'Cafetería' },
   { v: 'restaurant', l: 'Restaurante' },
@@ -55,8 +57,6 @@ const INDUSTRIES = [
   { v: 'other', l: 'Otro' },
 ] as const;
 
-/** Lee un File como data URL (PNG/JPG). Lo pasamos al cropper, que es el que
- *  decide el recorte final y produce el 60x60 que se guarda. */
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return reject(new Error('no_image'));
@@ -67,9 +67,10 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+// Paso -1 = bienvenida/demos; 0..3 = configuración; 4 = éxito
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
 
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState<string>('cafe');
@@ -77,7 +78,6 @@ export default function OnboardingPage() {
   const [logoText, setLogoText] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
   const [pendingLogoSrc, setPendingLogoSrc] = useState<string | null>(null);
-  // null = sin elección explícita → default dinámico ('logo' si hay logo, si no 'disc').
   const [stampPick, setStampPick] = useState<StampStyle | null>(null);
   const stampStyle: StampStyle = stampPick ?? (logoUrl ? 'logo' : 'disc');
   const [reward, setReward] = useState(REWARDS[0]);
@@ -122,35 +122,72 @@ export default function OnboardingPage() {
     }
   }
 
+  // ─── Pantalla de bienvenida ───────────────────────────────────────────────
+  if (step === -1) {
+    return (
+      <main className="flex-1 px-4 py-10 md:py-16">
+        <div className="max-w-3xl mx-auto space-y-10">
+          <div className="text-center space-y-3">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-brand-600 bg-brand-50 border border-brand-100 rounded-full px-3 py-1">
+              <Wallet size={13} /> Sin app · Directo a Wallet
+            </span>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+              Tu tarjeta de lealtad,<br className="hidden sm:block" /> en el celular de tus clientes
+            </h1>
+            <p className="text-gray-500 max-w-xl mx-auto">
+              En menos de 10 minutos creas tu programa, tus clientes se registran escaneando un QR y
+              la tarjeta vive directo en Apple Wallet o Google Wallet — sin descargar ninguna app.
+            </p>
+          </div>
 
-  return (
-    <main className="flex-1 px-4 py-8 md:py-12">
-      <div className="max-w-5xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-            Crea tu tarjeta de lealtad
-          </h1>
-          <p className="text-gray-500 mt-1 text-sm">
-            Sin app, sin diseñador. En 3 pasos tu negocio tiene su programa.
+          <DemoPassGallery title="Ejemplos reales de cómo se ve" />
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => setStep(0)}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-600 text-white rounded-xl px-6 py-3 font-medium hover:bg-brand-700"
+            >
+              Crear mi tarjeta gratis <ArrowRight size={16} />
+            </button>
+            <Link
+              href="/login"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-gray-300 text-gray-700 rounded-xl px-6 py-3 text-sm hover:border-gray-400"
+            >
+              <LogIn size={15} /> Ya tengo cuenta
+            </Link>
+          </div>
+
+          <p className="text-center text-xs text-gray-400">
+            Sin tarjeta de crédito · Sin app · Cancela cuando quieras
           </p>
-          <Steps step={step} />
-        </header>
+        </div>
+      </main>
+    );
+  }
 
-        {step === 4 && shareUrl ? (
-          <div className="max-w-md mx-auto text-center">
-            <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 grid place-items-center mx-auto mb-4">
+  // ─── Pantalla de éxito ────────────────────────────────────────────────────
+  if (step === 4 && shareUrl) {
+    return (
+      <main className="flex-1 px-4 py-10 md:py-16">
+        <div className="max-w-md mx-auto space-y-6">
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 grid place-items-center mx-auto">
               <Check size={26} />
             </div>
-            <h2 className="text-xl font-semibold">¡Tu programa está listo!</h2>
-            <p className="text-gray-500 text-sm mt-1 mb-6">
-              Pon este QR en tu mostrador o comparte el enlace. Tus clientes se
-              dan de alta en 10 segundos, sin descargar nada.
+            <h2 className="text-2xl font-semibold">¡Tu programa está listo!</h2>
+            <p className="text-gray-500 text-sm">
+              Pon este QR en tu mostrador o manda el enlace por WhatsApp. Tus clientes se
+              registran en 10 segundos y la tarjeta les queda directo en su Wallet.
             </p>
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 inline-block mb-4">
-              <QrCode value={shareUrl} size={208} />
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center gap-3 shadow-sm">
+            <p className="text-xs text-gray-400 uppercase tracking-widest">QR para mostrador</p>
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <QrCode value={shareUrl} size={196} />
             </div>
-            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm">
-              <span className="truncate flex-1 text-left text-gray-700">{shareUrl}</span>
+            <div className="flex items-center gap-2 w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm">
+              <span className="truncate flex-1 text-gray-700 text-xs">{shareUrl}</span>
               <button
                 onClick={() => {
                   const done = () => {
@@ -169,317 +206,372 @@ export default function OnboardingPage() {
                     done();
                   }
                 }}
-                className="flex items-center gap-1 text-brand-600 font-medium shrink-0"
+                className="flex items-center gap-1 text-brand-600 font-medium shrink-0 text-sm"
               >
                 <Copy size={14} /> {copied ? 'Copiado' : 'Copiar'}
               </button>
             </div>
+          </div>
+
+          <div className="bg-brand-50 border border-brand-100 rounded-2xl p-4 space-y-2.5 text-sm text-brand-800">
+            <p className="font-semibold text-brand-700">Siguientes pasos</p>
+            <div className="flex items-start gap-2.5">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-600 text-xs font-semibold mt-0.5">1</span>
+              <p>Imprime el QR y ponlo en tu mostrador.</p>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-600 text-xs font-semibold mt-0.5">2</span>
+              <p>Manda el enlace por WhatsApp a tus clientes frecuentes.</p>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-600 text-xs font-semibold mt-0.5">3</span>
+              <p>Desde tu panel da sellos con la cámara de tu celular.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
             <button
               onClick={() => router.push('/dashboard/')}
-              className="mt-6 w-full bg-brand-600 text-white rounded-xl px-4 py-3 font-medium hover:bg-brand-700"
+              className="w-full bg-brand-600 text-white rounded-xl px-4 py-3 font-medium hover:bg-brand-700 flex items-center justify-center gap-2"
             >
-              Ir a mi panel
+              Ir a mi panel <ArrowRight size={15} />
+            </button>
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: `Tarjeta de ${name}`, url: shareUrl });
+                } else {
+                  window.open(`https://wa.me/?text=${encodeURIComponent(shareUrl)}`, '_blank');
+                }
+              }}
+              className="w-full border border-gray-300 text-gray-700 rounded-xl px-4 py-3 text-sm hover:border-gray-400 flex items-center justify-center gap-2"
+            >
+              <Share2 size={15} /> Compartir por WhatsApp
             </button>
           </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-8 items-start">
-            {/* Preview en vivo — exactamente como se verá en Apple Wallet */}
-            <div className="order-1 md:order-2 md:sticky md:top-8">
-              <p className="text-xs uppercase tracking-widest text-gray-400 mb-3 text-center md:text-left">
-                Así se verá en Apple Wallet
-              </p>
-              <div className="flex justify-center">
-                <ApplePassPreview
-                  merchantName={name.trim() || 'Tu Negocio'}
-                  bgColor={color}
-                  logoUrl={logoUrl}
-                  stampStyle={stampStyle}
-                  stampsRequired={stamps}
-                  rewardDetail={reward}
-                  stamps={Math.min(3, stamps)}
-                />
-              </div>
-            </div>
+        </div>
+      </main>
+    );
+  }
 
-            {/* Editor */}
-            <div className="order-2 md:order-1 space-y-6">
-              {step === 0 && (
-                <Card title="1 · Tu negocio">
-                  <Field label="Nombre del negocio">
+  // ─── Flujo de configuración (pasos 0–3) ───────────────────────────────────
+  return (
+    <main className="flex-1 px-4 py-8 md:py-12">
+      <div className="max-w-5xl mx-auto">
+        <header className="text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+            Configura tu tarjeta de lealtad
+          </h1>
+          <p className="text-gray-500 mt-1 text-sm">
+            La preview de la derecha te muestra exactamente cómo se verá en Apple Wallet.
+          </p>
+          <Steps step={step} />
+        </header>
+
+        <div className="grid md:grid-cols-2 gap-8 items-start">
+          {/* Preview en vivo — WYSIWYG real vs. Apple Wallet */}
+          <div className="order-1 md:order-2 md:sticky md:top-8">
+            <p className="text-xs uppercase tracking-widest text-gray-400 mb-3 text-center md:text-left">
+              Vista previa — Apple Wallet
+            </p>
+            <div className="flex justify-center">
+              <ApplePassPreview
+                merchantName={name.trim() || 'Tu Negocio'}
+                bgColor={color}
+                logoUrl={logoUrl}
+                stampStyle={stampStyle}
+                stampsRequired={stamps}
+                rewardDetail={reward}
+                stamps={Math.min(3, stamps)}
+              />
+            </div>
+            <p className="text-center text-xs text-gray-400 mt-3">
+              El pase real en tu teléfono se verá igual que esta preview.
+            </p>
+          </div>
+
+          {/* Editor */}
+          <div className="order-2 md:order-1 space-y-6">
+            {step === 0 && (
+              <Card title="1 · Tu negocio">
+                <Field label="Nombre del negocio">
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ej. Marquesitas OMO"
+                    className="input"
+                  />
+                </Field>
+                <Field label="Giro">
+                  <div className="flex flex-wrap gap-2">
+                    {INDUSTRIES.map((g) => (
+                      <button
+                        key={g.v}
+                        onClick={() => setIndustry(g.v)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-full text-sm border',
+                          industry === g.v
+                            ? 'bg-brand-600 text-white border-brand-600'
+                            : 'bg-white text-gray-600 border-gray-300'
+                        )}
+                      >
+                        {g.l}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+                <Field label="Logo del negocio (opcional)">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-16 w-16 shrink-0 grid place-items-center overflow-hidden rounded-2xl border border-gray-200"
+                      style={{
+                        backgroundImage: logoUrl
+                          ? 'conic-gradient(#e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)'
+                          : undefined,
+                        backgroundColor: logoUrl ? undefined : '#f9fafb',
+                        backgroundSize: '10px 10px',
+                      }}
+                    >
+                      {logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={logoUrl}
+                          alt="logo"
+                          className="h-full w-full object-contain p-1"
+                        />
+                      ) : (
+                        <span className="text-xs text-gray-400">Sin logo</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:border-brand-400">
+                        <ImagePlus size={15} />
+                        {logoUrl ? 'Cambiar logo' : 'Subir logo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            try {
+                              setPendingLogoSrc(await readFileAsDataUrl(f));
+                            } catch {
+                              setError('No pudimos leer esa imagen. Usa PNG o JPG.');
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      {logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setLogoUrl(undefined)}
+                          className="w-fit text-xs text-gray-500 hover:text-gray-800"
+                        >
+                          Quitar
+                        </button>
+                      )}
+                      <span className="text-xs text-gray-400">
+                        PNG o JPG. El fondo blanco se elimina automáticamente.
+                      </span>
+                    </div>
+                  </div>
+                </Field>
+                {!logoUrl && (
+                  <Field label="O usa iniciales">
                     <input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Ej. Marquesitas OMO"
-                      className="input"
+                      value={logoText}
+                      onChange={(e) => setLogoText(e.target.value.slice(0, 3))}
+                      placeholder="Auto"
+                      className="input w-24"
                     />
                   </Field>
-                  <Field label="Giro">
-                    <div className="flex flex-wrap gap-2">
-                      {INDUSTRIES.map((g) => (
+                )}
+                <Nav
+                  onNext={() => setStep(1)}
+                  nextDisabled={!canDesign}
+                />
+              </Card>
+            )}
+
+            {step === 1 && (
+              <Card title="2 · Diseño de la tarjeta">
+                <Field label="Color del pase (fondo de la tarjeta)">
+                  <div
+                    className="flex flex-wrap gap-2"
+                    onDragOver={(e) => e.preventDefault()}
+                  >
+                    {COLORS.map((c) => (
+                      <button
+                        key={c}
+                        draggable
+                        onDragEnd={() => setColor(c)}
+                        onClick={() => setColor(c)}
+                        className={cn(
+                          'w-9 h-9 rounded-full ring-2 ring-offset-2 cursor-grab active:cursor-grabbing flex items-center justify-center',
+                          color === c ? 'ring-gray-900' : 'ring-transparent'
+                        )}
+                        style={{ background: c }}
+                        aria-label={`Color ${c}`}
+                      >
+                        {color === c && <Check size={14} className="text-white" />}
+                      </button>
+                    ))}
+                    <span className="flex items-center gap-1 text-xs text-gray-400 ml-1">
+                      <Palette size={13} /> o tócalo
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-400">
+                    Este es el fondo del pase. El texto se ajusta automáticamente para que se lea bien.
+                  </p>
+                </Field>
+                <Field label="Tu sello — el ícono que se llena al sellar">
+                  <div className="flex flex-wrap gap-2">
+                    {STAMP_STYLES.map((s) => {
+                      const isLogo = s.v === 'logo';
+                      const disabled = isLogo && !logoUrl;
+                      const active = stampStyle === s.v;
+                      return (
                         <button
-                          key={g.v}
-                          onClick={() => setIndustry(g.v)}
+                          key={s.v}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => setStampPick(s.v)}
+                          title={
+                            disabled ? 'Sube un logo para usar este estilo' : s.l
+                          }
                           className={cn(
-                            'px-3 py-1.5 rounded-full text-sm border',
-                            industry === g.v
+                            'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border',
+                            disabled && 'opacity-40 cursor-not-allowed',
+                            active
                               ? 'bg-brand-600 text-white border-brand-600'
                               : 'bg-white text-gray-600 border-gray-300'
                           )}
                         >
-                          {g.l}
-                        </button>
-                      ))}
-                    </div>
-                  </Field>
-                  <Field label="Logo del negocio (opcional)">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="h-16 w-16 shrink-0 grid place-items-center overflow-hidden rounded-2xl border border-gray-200"
-                        style={{
-                          backgroundImage: logoUrl
-                            ? 'conic-gradient(#e5e7eb 25%, #ffffff 0 50%, #e5e7eb 0 75%, #ffffff 0)'
-                            : undefined,
-                          backgroundColor: logoUrl ? undefined : '#f9fafb',
-                          backgroundSize: '10px 10px',
-                        }}
-                      >
-                        {logoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={logoUrl}
-                            alt="logo"
-                            className="h-full w-full object-contain p-1"
-                          />
-                        ) : (
-                          <span className="text-xs text-gray-400">Sin logo</span>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:border-brand-400">
-                          <ImagePlus size={15} />
-                          {logoUrl ? 'Cambiar logo' : 'Subir logo'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={async (e) => {
-                              const f = e.target.files?.[0];
-                              if (!f) return;
-                              try {
-                                setPendingLogoSrc(await readFileAsDataUrl(f));
-                              } catch {
-                                setError('No pudimos leer esa imagen. Usa PNG o JPG.');
-                              }
-                              // reset para permitir re-elegir el mismo archivo
-                              e.target.value = '';
-                            }}
-                          />
-                        </label>
-                        {logoUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setLogoUrl(undefined)}
-                            className="w-fit text-xs text-gray-500 hover:text-gray-800"
-                          >
-                            Quitar
-                          </button>
-                        )}
-                        <span className="text-xs text-gray-400">
-                          PNG o JPG. Tú eliges el recorte.
-                        </span>
-                      </div>
-                    </div>
-                  </Field>
-                  {!logoUrl && (
-                    <Field label="O usa iniciales">
-                      <input
-                        value={logoText}
-                        onChange={(e) => setLogoText(e.target.value.slice(0, 3))}
-                        placeholder="Auto"
-                        className="input w-24"
-                      />
-                    </Field>
-                  )}
-                  <Nav
-                    onNext={() => setStep(1)}
-                    nextDisabled={!canDesign}
-                  />
-                </Card>
-              )}
-
-              {step === 1 && (
-                <Card title="2 · Diseño">
-                  <Field label="Color del pase (fondo de la tarjeta)">
-                    <div
-                      className="flex flex-wrap gap-2"
-                      onDragOver={(e) => e.preventDefault()}
-                    >
-                      {COLORS.map((c) => (
-                        <button
-                          key={c}
-                          draggable
-                          onDragEnd={() => setColor(c)}
-                          onClick={() => setColor(c)}
-                          className={cn(
-                            'w-9 h-9 rounded-full ring-2 ring-offset-2 cursor-grab active:cursor-grabbing flex items-center justify-center',
-                            color === c ? 'ring-gray-900' : 'ring-transparent'
+                          {isLogo && logoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={logoUrl}
+                              alt=""
+                              className="h-4 w-4 rounded-full object-contain"
+                              aria-hidden
+                            />
+                          ) : (
+                            <span aria-hidden>{s.glyph}</span>
                           )}
-                          style={{ background: c }}
-                          aria-label={`Color ${c}`}
-                        >
-                          {color === c && <Check size={14} className="text-white" />}
+                          {s.l}
                         </button>
-                      ))}
-                      <span className="flex items-center gap-1 text-xs text-gray-400 ml-1">
-                        <Palette size={13} /> o tócalo
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-400">
-                      Este es el color de fondo del pase en Apple Wallet. El texto
-                      se ajusta solo para que se lea bien.
-                    </p>
-                  </Field>
-                  <Field label="Tu sello">
-                    <div className="flex flex-wrap gap-2">
-                      {STAMP_STYLES.map((s) => {
-                        const isLogo = s.v === 'logo';
-                        const disabled = isLogo && !logoUrl;
-                        const active = stampStyle === s.v;
-                        return (
-                          <button
-                            key={s.v}
-                            type="button"
-                            disabled={disabled}
-                            onClick={() => setStampPick(s.v)}
-                            title={
-                              disabled ? 'Sube un logo para usar este estilo' : s.l
-                            }
-                            className={cn(
-                              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border',
-                              disabled && 'opacity-40 cursor-not-allowed',
-                              active
-                                ? 'bg-brand-600 text-white border-brand-600'
-                                : 'bg-white text-gray-600 border-gray-300'
-                            )}
-                          >
-                            {isLogo && logoUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={logoUrl}
-                                alt=""
-                                className="h-4 w-4 rounded-full object-contain"
-                                aria-hidden
-                              />
-                            ) : (
-                              <span aria-hidden>{s.glyph}</span>
-                            )}
-                            {s.l}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <p className="mt-2 text-xs text-gray-400">
-                      Es el ícono que se llena al sellar. Con &quot;Logo&quot;
-                      usamos tu logo recortado en círculo, automático.
-                    </p>
-                  </Field>
-                  <Nav onBack={() => setStep(0)} onNext={() => setStep(2)} />
-                </Card>
-              )}
-
-              {step === 2 && (
-                <Card title="3 · Premio">
-                  <Field label="Elige el premio">
-                    <div className="space-y-2">
-                      {REWARDS.map((r) => (
-                        <button
-                          key={r}
-                          draggable
-                          onDragEnd={() => setReward(r)}
-                          onClick={() => setReward(r)}
-                          className={cn(
-                            'w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm text-left cursor-grab active:cursor-grabbing',
-                            reward === r
-                              ? 'border-brand-600 bg-brand-50 text-brand-700'
-                              : 'border-gray-200 bg-white text-gray-700'
-                          )}
-                        >
-                          <GripVertical size={15} className="text-gray-400 shrink-0" />
-                          <Gift size={15} className="shrink-0" />
-                          {r}
-                          {reward === r && <Check size={15} className="ml-auto" />}
-                        </button>
-                      ))}
-                    </div>
-                  </Field>
-                  <Field label={`Sellos para el premio: ${stamps}`}>
-                    <input
-                      type="range"
-                      min={4}
-                      max={12}
-                      value={stamps}
-                      onChange={(e) => setStamps(Number(e.target.value))}
-                      className="w-full accent-brand-600"
-                    />
-                  </Field>
-                  <Nav onBack={() => setStep(1)} onNext={() => setStep(3)} nextLabel="Crear cuenta" />
-                </Card>
-              )}
-
-              {step === 3 && (
-                <Card title="Casi listo · Tu cuenta">
-                  <Field label="Correo">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="tu@negocio.com"
-                      className="input"
-                    />
-                  </Field>
-                  <Field label="Contraseña">
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Mínimo 8 caracteres"
-                      className="input"
-                    />
-                  </Field>
-                  {error && (
-                    <div className="bg-red-50 text-red-700 text-sm rounded-lg px-3 py-3 space-y-2">
-                      <p>{error}</p>
-                      {emailExists && (
-                        <Link
-                          href="/login/"
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-700"
-                        >
-                          <LogIn size={14} /> Ir a iniciar sesión
-                        </Link>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between pt-2">
-                    <button
-                      onClick={() => setStep(2)}
-                      className="flex items-center gap-1 text-sm text-gray-500"
-                    >
-                      <ArrowLeft size={15} /> Atrás
-                    </button>
-                    <button
-                      onClick={finish}
-                      disabled={busy || email.length < 5 || password.length < 8}
-                      className="flex items-center gap-2 bg-brand-600 text-white rounded-xl px-5 py-2.5 font-medium disabled:opacity-50 hover:bg-brand-700"
-                    >
-                      {busy ? 'Creando…' : 'Lanzar mi programa'}
-                      {!busy && <ArrowRight size={16} />}
-                    </button>
+                      );
+                    })}
                   </div>
-                </Card>
-              )}
-            </div>
+                  <p className="mt-2 text-xs text-gray-400">
+                    Con &quot;Logo&quot; usamos tu logo recortado en círculo automáticamente.
+                    La preview de la derecha se actualiza en tiempo real.
+                  </p>
+                </Field>
+                <Nav onBack={() => setStep(0)} onNext={() => setStep(2)} />
+              </Card>
+            )}
+
+            {step === 2 && (
+              <Card title="3 · Premio para tus clientes">
+                <Field label="Elige el premio que recibirán">
+                  <div className="space-y-2">
+                    {REWARDS.map((r) => (
+                      <button
+                        key={r}
+                        draggable
+                        onDragEnd={() => setReward(r)}
+                        onClick={() => setReward(r)}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm text-left cursor-grab active:cursor-grabbing',
+                          reward === r
+                            ? 'border-brand-600 bg-brand-50 text-brand-700'
+                            : 'border-gray-200 bg-white text-gray-700'
+                        )}
+                      >
+                        <GripVertical size={15} className="text-gray-400 shrink-0" />
+                        <Gift size={15} className="shrink-0" />
+                        {r}
+                        {reward === r && <Check size={15} className="ml-auto" />}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+                <Field label={`Sellos requeridos: ${stamps}`}>
+                  <input
+                    type="range"
+                    min={4}
+                    max={12}
+                    value={stamps}
+                    onChange={(e) => setStamps(Number(e.target.value))}
+                    className="w-full accent-brand-600"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    El cliente acumula {stamps} sellos y recibe: {reward}.
+                  </p>
+                </Field>
+                <Nav onBack={() => setStep(1)} onNext={() => setStep(3)} nextLabel="Crear cuenta" />
+              </Card>
+            )}
+
+            {step === 3 && (
+              <Card title="4 · Crea tu cuenta">
+                <p className="text-sm text-gray-500 -mt-1">
+                  Ya casi. Solo necesitamos un correo y contraseña para guardar tu programa.
+                </p>
+                <Field label="Correo">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@negocio.com"
+                    className="input"
+                  />
+                </Field>
+                <Field label="Contraseña">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    className="input"
+                  />
+                </Field>
+                {error && (
+                  <div className="bg-red-50 text-red-700 text-sm rounded-lg px-3 py-3 space-y-2">
+                    <p>{error}</p>
+                    {emailExists && (
+                      <Link
+                        href="/login/"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-700"
+                      >
+                        <LogIn size={14} /> Ir a iniciar sesión
+                      </Link>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    onClick={() => setStep(2)}
+                    className="flex items-center gap-1 text-sm text-gray-500"
+                  >
+                    <ArrowLeft size={15} /> Atrás
+                  </button>
+                  <button
+                    onClick={finish}
+                    disabled={busy || email.length < 5 || password.length < 8}
+                    className="flex items-center gap-2 bg-brand-600 text-white rounded-xl px-5 py-2.5 font-medium disabled:opacity-50 hover:bg-brand-700"
+                  >
+                    {busy ? 'Creando…' : 'Lanzar mi programa'}
+                    {!busy && <ArrowRight size={16} />}
+                  </button>
+                </div>
+              </Card>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <style jsx global>{`
@@ -495,6 +587,7 @@ export default function OnboardingPage() {
           border-color: #6366f1;
         }
       `}</style>
+
       {pendingLogoSrc && (
         <LogoCropper
           src={pendingLogoSrc}
@@ -509,11 +602,12 @@ export default function OnboardingPage() {
   );
 }
 
+// ─── Indicador de pasos ────────────────────────────────────────────────────
 function Steps({ step }: { step: number }) {
   const labels = ['Negocio', 'Diseño', 'Premio', 'Cuenta', 'Listo'];
   const idx = Math.min(step, 4);
   return (
-    <div className="flex items-center justify-center gap-2 mt-5">
+    <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
       {labels.map((l, i) => (
         <div key={l} className="flex items-center gap-2">
           <div
@@ -537,7 +631,7 @@ function Steps({ step }: { step: number }) {
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-5">
-      <h2 className="font-semibold">{title}</h2>
+      <h2 className="font-semibold text-gray-900">{title}</h2>
       {children}
     </div>
   );

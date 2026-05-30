@@ -29,6 +29,7 @@ import {
 import { cn } from '@/lib/cn';
 import {
   clearToken,
+  decodeJwtClaims,
   getMe,
   getToken,
   getMyMerchant,
@@ -74,14 +75,15 @@ export default function DashboardShell({
         : '/dashboard/';
     const loginUrl = `/login/?next=${encodeURIComponent(here)}`;
     const token = getToken();
-    if (!token) {
+    const devClaims = decodeJwtClaims();
+    if (!token && !devClaims) {
       router.replace(loginUrl);
       return;
     }
     (async () => {
       try {
         const [me, merchant, billingStatus] = await Promise.all([
-          getMe(),
+          token ? getMe() : Promise.resolve({ claims: devClaims! }),
           getMyMerchant().catch(() => null),
           getBillingStatus().catch(() => null),
         ]);

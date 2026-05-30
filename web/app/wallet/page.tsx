@@ -124,6 +124,7 @@ function WalletCardContent() {
           brandColor={brandColor}
           tagline={pm?.merchant.industry}
           logoUrl={pm?.merchant.logoUrl}
+          stampStyle={pm?.merchant.stampStyle}
           programName={programName}
           stampsRequired={stampsRequired}
           rewardDetail={rewardDetail}
