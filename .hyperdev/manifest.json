@@ -1,0 +1,34 @@
+{
+  "$schema": "hyperdev/repo-manifest/v1",
+  "repo": "integra-loyalty",
+  "brain": ["productos/loyalty", "finanzas/pricing", "stack/canonico"],
+  "domain": "SaaS multi-tenant de tarjetas de lealtad digital en Apple/Google Wallet para PyMEs (México). B2B: Integra vende suscripción a comercios; los comercios emiten tarjetas a consumidores.",
+  "architecture": "monorepo (pnpm): api (Lambda Node20 + Hono + Zod, DynamoDB single-table) · web (Next.js 14 App Router, PWA) · infra (AWS CDK TypeScript) · demo-pass",
+  "entrypoints": {
+    "api": "api/src",
+    "web": "web",
+    "infra": "infra",
+    "knowledge": "CLAUDE.md"
+  },
+  "commands": {
+    "install": "pnpm install",
+    "dev": "pnpm dev:up",
+    "test": "cd api && pnpm test",
+    "lint": "cd api && pnpm lint",
+    "build": "cd web && pnpm build",
+    "deploy": "cd infra && pnpm run deploy:dev"
+  },
+  "secrets": "AWS Secrets Manager (Stripe live, Cognito) — NUNCA en .env. Cuenta AWS 041876399045.",
+  "conventions": ["pnpm", "TypeScript estricto (tsc --noEmit como lint del api)", "Zod en los límites", "arquitectura hexagonal en api/src"],
+  "danger_zones": [
+    "infra/ (CDK): deploy:dev toca infraestructura real en AWS",
+    "api/src/lib/repositories: DynamoDB single-table — cambios de esquema/llaves pueden romper datos existentes",
+    "despliegue de wallet usa cuentas Apple/Google DE INTEGRA, no del comercio"
+  ],
+  "glossary": {
+    "tenant": "un comercio suscrito (multi-tenant)",
+    "pass": "la tarjeta de lealtad que vive en Apple/Google Wallet",
+    "merchant dashboard": "panel donde el comercio configura su programa y ve adopción",
+    "admin dashboard": "vista global multi-tenant de Integra (MRR, soporte, overrides)"
+  }
+}
